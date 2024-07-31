@@ -3,4 +3,23 @@ project(RISC_V_Simulator)
 
 set(CMAKE_CXX_STANDARD 17)
 
-add_executable(RISC_V_Simulator main.cpp)
+add_executable(code
+        main.cpp
+        src/ALU.cpp
+        src/BranchPredictor.cpp
+        src/CPU.cpp
+        src/Clock.cpp
+        src/Decoder.cpp
+        src/InstructionUnit.cpp
+        src/LoadStoreBuffer.cpp
+        src/Memory.cpp
+        src/RegisterFile.cpp
+        src/ReorderBuffer.cpp
+        src/ReservationStation.cpp
+        src/TypeDef.cpp
+        src/utils/WriteController.cpp
+)
+
+target_include_directories(code PRIVATE
+        ${CMAKE_SOURCE_DIR}/src
+)
