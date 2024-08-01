@@ -3,7 +3,7 @@
 namespace bubble {
 
 InstQueueEntry::InstQueueEntry(uint32_t inst, uint32_t pc, bool jump) :
-    inst_(inst), pc_(pc), jump_(jump) {}
+    inst_(inst), addr_(pc), jump_(jump) {}
 
 IUToDecoder::IUToDecoder(bool get_inst, uint32_t inst, uint32_t pc, bool jump) :
     get_inst_(get_inst), inst_(inst), addr_(pc), is_jump_predicted_(jump) {}

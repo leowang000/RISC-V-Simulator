@@ -10,6 +10,16 @@ namespace bubble {
 
 LoadStoreBuffer::LoadStoreBuffer(const Clock &clock) : lsb_(), to_mem_(), wc_(clock) {}
 
+void LoadStoreBuffer::Debug() const {
+  std::cout << "Load/Store Buffer:\n";
+  std::cout << "\tlsb_ = {\n";
+  for (int i = lsb_.GetCur().BeginId(); i != lsb_.GetCur().EndId(); i = (i + 1) % (kLSBSize + 1)) {
+    std::cout << "\t" << i << "\t" << lsb_.GetCur()[i].ToString() << "\n";
+  }
+  std::cout << "\t}\n";
+  std::cout << "\tto_mem_ = " << to_mem_.GetCur().ToString() << "\n\n";
+}
+
 bool LoadStoreBuffer::IsFull() const {
   return lsb_.GetCur().IsFull();
 }
@@ -33,15 +43,18 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
       Flush();
       return;
     }
-    bool is_empty = !lsb_.GetCur().IsFull();
-    bool is_load_inst = !is_empty && (from_decoder.inst_type_ == kLB || from_decoder.inst_type_ == kLH ||
-                                      from_decoder.inst_type_ == kLW || from_decoder.inst_type_ == kLBU ||
-                                      from_decoder.inst_type_ == kLHU);
-    bool is_store_inst = !is_empty && (from_decoder.inst_type_ == kSB || from_decoder.inst_type_ == kSH ||
-                                       from_decoder.inst_type_ == kSW);
-    EnqueueInst(stall, is_store_inst || is_load_inst, from_decoder, reg_value, reg_status, rb_queue);
+    bool is_front_load = !lsb_.GetCur().IsEmpty() &&
+                         (lsb_.GetCur().Front().inst_type_ == kLB || lsb_.GetCur().Front().inst_type_ == kLH ||
+                          lsb_.GetCur().Front().inst_type_ == kLW || lsb_.GetCur().Front().inst_type_ == kLBU ||
+                          lsb_.GetCur().Front().inst_type_ == kLHU);
+    bool is_new_inst_load = (from_decoder.inst_type_ == kLB || from_decoder.inst_type_ == kLH ||
+                             from_decoder.inst_type_ == kLW || from_decoder.inst_type_ == kLBU ||
+                             from_decoder.inst_type_ == kLHU);
+    bool is_new_inst_store = (from_decoder.inst_type_ == kSB || from_decoder.inst_type_ == kSH ||
+                              from_decoder.inst_type_ == kSW);
+    EnqueueInst(stall, is_new_inst_store, is_new_inst_load, from_decoder, reg_value, reg_status, rb_queue);
     UpdateDependencies(from_mem, from_alu);
-    bool dequeue_load = WriteToToMemory(is_load_inst, is_mem_busy);
+    bool dequeue_load = WriteToMemory(is_front_load, is_mem_busy);
     if (dequeue_load || rb_to_mem.store_) {
       lsb_.New().Dequeue();
     }
@@ -62,27 +75,42 @@ void LoadStoreBuffer::Flush() {
   to_mem_.New().load_ = false;
 }
 
-void LoadStoreBuffer::EnqueueInst(bool stall, bool is_store_or_load_inst, const DecoderOutput &from_decoder,
-                                  const std::array<uint32_t, kXLen> &reg_value,
+void LoadStoreBuffer::EnqueueInst(bool stall, bool is_new_inst_store, bool is_new_inst_load,
+                                  const DecoderOutput &from_decoder, const std::array<uint32_t, kXLen> &reg_value,
                                   const std::array<int, kXLen> &reg_status,
                                   const CircularQueue<RoBEntry, kRoBSize> &rb_queue) {
-  if (stall || !from_decoder.get_inst_ || !is_store_or_load_inst) {
+  if (stall || !from_decoder.get_inst_ || (!is_new_inst_store && !is_new_inst_load)) {
     return;
   }
   LSBEntry lsb_entry;
   lsb_entry.inst_type_ = from_decoder.inst_type_;
   lsb_entry.id_ = rb_queue.EndId();
-  lsb_entry.Q_ = reg_status[from_decoder.rs1_];
-  if (lsb_entry.Q_ == -1) {
-    lsb_entry.V_ = reg_value[from_decoder.rs1_] + from_decoder.imm_;
+  lsb_entry.Q1_ = reg_status[from_decoder.rs1_];
+  if (lsb_entry.Q1_ == -1) {
+    lsb_entry.V1_ = reg_value[from_decoder.rs1_] + from_decoder.imm_;
   }
   else {
-    if (rb_queue[lsb_entry.Q_].done_) {
-      lsb_entry.Q_ = -1;
-      lsb_entry.V_ = rb_queue[lsb_entry.Q_].val_ + from_decoder.imm_;
+    if (rb_queue[lsb_entry.Q1_].done_) {
+      lsb_entry.V1_ = rb_queue[lsb_entry.Q1_].val_ + from_decoder.imm_;
+      lsb_entry.Q1_ = -1;
     }
     else {
-      lsb_entry.V_ = from_decoder.imm_;
+      lsb_entry.V1_ = from_decoder.imm_;
+    }
+  }
+  if (is_new_inst_load) {
+    lsb_entry.Q2_ = -1;
+  }
+  if (is_new_inst_store) {
+    lsb_entry.Q2_ = reg_status[from_decoder.rs2_];
+    if (lsb_entry.Q2_ == -1) {
+      lsb_entry.V2_ = reg_value[from_decoder.rs2_];
+    }
+    else {
+      if (rb_queue[lsb_entry.Q2_].done_) {
+        lsb_entry.V2_ = rb_queue[lsb_entry.Q2_].val_;
+        lsb_entry.Q2_ = -1;
+      }
     }
   }
   lsb_.New().Enqueue(lsb_entry);
@@ -91,29 +119,37 @@ void LoadStoreBuffer::EnqueueInst(bool stall, bool is_store_or_load_inst, const 
 void LoadStoreBuffer::UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu) {
   if (from_mem.done_) {
     for (int i = lsb_.New().BeginId(); i != lsb_.New().EndId(); i = (i + 1) % (kLSBSize + 1)) {
-      if (lsb_.New()[i].Q_ == from_mem.id_) {
-        lsb_.New()[i].Q_ = -1;
-        lsb_.New()[i].V_ += from_mem.val_;
+      if (lsb_.New()[i].Q1_ == from_mem.id_) {
+        lsb_.New()[i].Q1_ = -1;
+        lsb_.New()[i].V1_ += from_mem.val_;
+      }
+      if (lsb_.New()[i].Q2_ == from_mem.id_) {
+        lsb_.New()[i].Q2_ = -1;
+        lsb_.New()[i].V2_ = from_mem.val_;
       }
     }
   }
   if (from_alu.done_) {
     for (int i = lsb_.New().BeginId(); i != lsb_.New().EndId(); i = (i + 1) % (kLSBSize + 1)) {
-      if (lsb_.New()[i].Q_ == from_alu.id_) {
-        lsb_.New()[i].Q_ = -1;
-        lsb_.New()[i].V_ += from_alu.val_;
+      if (lsb_.New()[i].Q1_ == from_alu.id_) {
+        lsb_.New()[i].Q1_ = -1;
+        lsb_.New()[i].V1_ += from_alu.val_;
+      }
+      if (lsb_.New()[i].Q2_ == from_alu.id_) {
+        lsb_.New()[i].Q2_ = -1;
+        lsb_.New()[i].V2_ = from_alu.val_;
       }
     }
   }
 }
 
-bool LoadStoreBuffer::WriteToToMemory(bool is_load_inst, bool is_mem_busy) {
+bool LoadStoreBuffer::WriteToMemory(bool is_front_load, bool is_mem_busy) {
   to_mem_.New().load_ = false;
-  if (!is_load_inst || is_mem_busy || lsb_.GetCur().Front().Q_ != -1) {
+  if (!is_front_load || is_mem_busy || to_mem_.GetCur().load_ || lsb_.GetCur().Front().Q1_ != -1) {
     return false;
   }
   to_mem_.New().load_ = true;
-  to_mem_.New().load_addr_ = lsb_.GetCur().Front().V_;
+  to_mem_.New().load_addr_ = lsb_.GetCur().Front().V1_;
   to_mem_.New().inst_type_ = lsb_.GetCur().Front().inst_type_;
   to_mem_.New().id_ = lsb_.GetCur().Front().id_;
   return true;

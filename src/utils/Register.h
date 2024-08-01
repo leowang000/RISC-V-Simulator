@@ -12,6 +12,7 @@ class Register {
   void Update();
   void Write(const T &src);
   T &New();
+  const T &New() const;
   const T &GetCur() const;
 
  private:
@@ -34,6 +35,11 @@ void Register<T>::Write(const T &src) {
 
 template<class T>
 T &Register<T>::New() {
+  return new_;
+}
+
+template<class T>
+const T &Register<T>::New() const {
   return new_;
 }
 

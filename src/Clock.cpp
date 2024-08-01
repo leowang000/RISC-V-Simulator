@@ -1,8 +1,14 @@
+#include <iostream>
+
 #include "Clock.h"
 
 namespace bubble {
 
 Clock::Clock() : cycle_(), is_running_(false) {}
+
+void Clock::Debug() const {
+  std::cout << "# Clock cycle " << cycle_ << "\n\n";
+}
 
 void Clock::Run() {
   is_running_ = true;

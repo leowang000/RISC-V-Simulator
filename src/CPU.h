@@ -21,12 +21,13 @@ class CPU {
  public:
   CPU();
 
+  void Debug();
   void LoadMemory(const std::string &path);
-  void RunClock();
   void Update();
   void Execute();
   void Write();
-  uint8_t Halt();
+  bool ShouldHalt() const;
+  uint32_t Halt();
 
   Clock clock_;
   BranchPredictor bp_;

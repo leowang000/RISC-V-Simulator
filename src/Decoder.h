@@ -20,6 +20,7 @@ class Decoder {
  public:
   Decoder(const Clock &clock);
 
+  void Debug() const;
   bool IsStallNeeded(bool is_rb_full, bool is_rs_full, bool is_lsb_full) const;
   void Update();
   void
@@ -33,7 +34,7 @@ class Decoder {
   static bool GetOperands(DecoderOutput &out, uint32_t inst);
   static bool GetInstType(DecoderOutput &out, uint32_t inst);
   void Flush();
-  void WriteToOutput(const IUToDecoder &from_iu);
+  void WriteOutput(const IUToDecoder &from_iu);
 
   WriteController wc_;
 };

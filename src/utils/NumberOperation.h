@@ -18,7 +18,7 @@ constexpr uint32_t GetSub(uint32_t n, int start, int end) {
 }
 
 constexpr uint32_t SignExtend(uint32_t n, int start) {
-  return (n >> (start + 1)) ? (n | static_cast<uint32_t>(-1) << (start + 1)) : n;
+  return (n >> start) ? (n | static_cast<uint32_t>(-1) << (start + 1)) : n;
 }
 
 }

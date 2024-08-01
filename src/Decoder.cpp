@@ -10,6 +10,11 @@ namespace bubble {
 
 Decoder::Decoder(const Clock &clock) : wc_(clock), output_() {}
 
+void Decoder::Debug() const {
+  std::cout << "Decoder:\n";
+  std::cout << "\toutput_ = " << output_.GetCur().ToString() << "\n\n";
+}
+
 bool Decoder::IsStallNeeded(bool is_rb_full, bool is_rs_full, bool is_lsb_full) const {
   if (!output_.GetCur().get_inst_) {
     return false;
@@ -51,8 +56,8 @@ void Decoder::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, con
       Flush();
       return;
     }
-    if (!stall || !output_.GetCur().get_inst_) {
-      WriteToOutput(from_iu);
+    if (!stall) {
+      WriteOutput(from_iu);
     }
   };
   wc_.Set(write_func, 1);
@@ -252,7 +257,7 @@ void Decoder::Flush() {
   output_.New().get_inst_ = false;
 }
 
-void Decoder::WriteToOutput(const IUToDecoder &from_iu) {
+void Decoder::WriteOutput(const IUToDecoder &from_iu) {
   output_.New().get_inst_ = false;
   if (!from_iu.get_inst_) {
     return;

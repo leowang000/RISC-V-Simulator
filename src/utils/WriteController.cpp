@@ -2,11 +2,12 @@
 
 namespace bubble {
 
-WriteController::WriteController(const Clock &clock) : clock_(&clock), done_(INT32_MAX), write_func_(), busy_(false) {}
+WriteController::WriteController(const Clock &clock) :
+    clock_(&clock), done_(INT32_MAX), write_func_([]() {}), busy_(false) {}
 
 void WriteController::Update() {
   done_.Update();
-  busy_ = clock_->GetCycleCount() >= done_.GetCur();
+  busy_ = done_.GetCur() != INT32_MAX && clock_->GetCycleCount() < done_.GetCur();
 }
 
 bool WriteController::IsReady() const {
@@ -37,7 +38,7 @@ void WriteController::Write() const {
   if (!clock_->IsRunning()) {
     return;
   }
-  if (clock_->GetCycleCount() == done_.GetCur() - 1) {
+  if (clock_->GetCycleCount() == done_.New() - 1) {
     write_func_();
   }
 }

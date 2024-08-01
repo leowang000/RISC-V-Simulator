@@ -2,6 +2,7 @@
 #define RISC_V_SIMULATOR_CIRCULARQUEUE_H
 
 #include <array>
+#include <cassert>
 
 namespace bubble {
 
@@ -51,12 +52,14 @@ bool CircularQueue<T, capacity>::IsFull() const {
 
 template<class T, int capacity>
 void CircularQueue<T, capacity>::Enqueue(const T &x) {
+  assert(!IsFull());
   data_[rear_] = x;
   rear_ = (rear_ + 1) % (capacity + 1);
 }
 
 template<class T, int capacity>
 void CircularQueue<T, capacity>::Dequeue() {
+  assert(!IsEmpty());
   front_ = (front_ + 1) % (capacity + 1);
 }
 

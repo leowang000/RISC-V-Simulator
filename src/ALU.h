@@ -15,6 +15,7 @@ class ALU {
  public:
   ALU(const Clock &clock);
 
+  void Debug() const;
   void Update();
   void Execute(const ReorderBuffer &rb, const ReservationStation &rs);
   void Write();
@@ -24,7 +25,7 @@ class ALU {
 
  private:
   void Flush();
-  void WriteToOutput(const RSToALU &from_rs);
+  void WriteOutput(const RSToALU &from_rs);
 
   WriteController wc_;
 };

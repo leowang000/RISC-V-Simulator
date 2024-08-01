@@ -22,6 +22,7 @@ class ReservationStation {
  public:
   ReservationStation(const Clock &clock);
 
+  void Debug() const;
   bool IsFull() const;
   void Update();
   void Execute(const ALU &alu, const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
@@ -37,7 +38,7 @@ class ReservationStation {
   void InsertInst(bool stall, const DecoderOutput &from_decoder, const std::array<uint32_t, kXLen> &reg_value,
                   const std::array<int, kXLen> &reg_status, const CircularQueue<RoBEntry, kRoBSize> &rb_queue);
   void UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu);
-  int WriteToToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_queue);
+  int WriteToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_queue);
 
   WriteController wc_;
 };

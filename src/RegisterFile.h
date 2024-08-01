@@ -21,6 +21,7 @@ class RegisterFile {
  public:
   RegisterFile(const Clock &clock);
 
+  void Debug(const ReorderBuffer &rb) const;
   std::array<uint32_t, kXLen> GetRegisterValue(const ReorderBuffer &rb) const;
   std::array<int, kXLen> GetRegisterStatus(const ReorderBuffer &rb) const;
   void Update();

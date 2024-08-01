@@ -1,3 +1,4 @@
+#include <cassert>
 #include <fstream>
 
 #include "utils/NumberOperation.h"
@@ -10,13 +11,25 @@ CPU::CPU() :
     clock_(), bp_(), alu_(clock_), decoder_(clock_), iu_(clock_, bp_), lsb_(clock_), memory_(clock_), rf_(clock_), rb_(
     clock_, bp_), rs_(clock_) {}
 
+void CPU::Debug() {
+  if (clock_.GetCycleCount() >= 1000) {
+    return;
+  }
+  clock_.Debug();
+  iu_.Debug();
+  decoder_.Debug();
+  memory_.Debug();
+  alu_.Debug();
+  rf_.Debug(rb_);
+  rb_.Debug(memory_, alu_);
+  rs_.Debug();
+  lsb_.Debug();
+  std::cout << "----------------------------------------------------------------------------------------------------\n";
+}
+
 void CPU::LoadMemory(const std::string &path) {
   std::ifstream in(path);
   memory_.Init(in);
-}
-
-void CPU::RunClock() {
-  clock_.Run();
 }
 
 void CPU::Update() {
@@ -31,6 +44,9 @@ void CPU::Update() {
 }
 
 void CPU::Execute() {
+  if (clock_.GetCycleCount() == 0) {
+    iu_.pc_.Write(4);
+  }
   alu_.Execute(rb_, rs_);
   decoder_.Execute(iu_, lsb_, rb_, rs_);
   iu_.Execute(decoder_, lsb_, memory_, rb_, rs_);
@@ -52,10 +68,15 @@ void CPU::Write() {
   rs_.Write();
 }
 
-uint8_t CPU::Halt() {
-  ForceWrite();
-  clock_.Tick();
-  Update();
+bool CPU::ShouldHalt() const {
+  return rb_.halt_;
+}
+
+uint32_t CPU::Halt() {
+  memory_.ForceWrite();
+  rf_.ForceWrite();
+  memory_.Update();
+  rf_.Update();
   return GetSub(rf_.value_[10].GetCur(), 7, 0);
 }
 

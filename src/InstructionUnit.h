@@ -24,6 +24,7 @@ class InstructionUnit {
  public:
   InstructionUnit(const Clock &clock, const BranchPredictor &bp);
 
+  void Debug() const;
   void Update();
   void Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory, const ReorderBuffer &rb,
                const ReservationStation &rs);
@@ -36,13 +37,15 @@ class InstructionUnit {
   Register<IUToDecoder> to_decoder_;
 
  private:
-  // Return whether the instruction is J-type or B-type (JAL and all branch instructions).
-  // We don't predict JALR since we don't know the destination of the jump.
-  static constexpr bool IsJumpInst(uint32_t inst) {
-    return (inst & 0b1111111) == 0b1101111 || (inst & 0b1111111) == 0b1100011;
+  static constexpr bool IsBranchInst(uint32_t inst) {
+    return (inst & 0b1111111) == 0b1100011;
   }
 
-  static constexpr uint32_t GetJumpDest(uint32_t inst, uint32_t pc) {
+  static constexpr bool IsJAL(uint32_t inst) {
+    return (inst & 0b1111111) == 0b1101111;
+  }
+
+  static constexpr uint32_t GetJumpOrBranchDest(uint32_t inst, uint32_t pc) {
     return pc + ((inst & 0b1111111) ^ 0b1100011 ?
                  SignExtend((GetSub(inst, 31, 31) << 20) | (GetSub(inst, 19, 12) << 12) | (GetSub(inst, 20, 20) << 11) |
                             (GetSub(inst, 30, 25) << 5) | (GetSub(inst, 24, 21) << 1), 20) :
@@ -52,11 +55,11 @@ class InstructionUnit {
 
   void Flush(uint32_t pc, bool is_memory_ready);
   void WriteToDecoder(bool dequeue);
-  void WriteToMemory(bool can_enqueue, bool is_mem_inst_ready, uint32_t inst);
+  void WriteToMemoryAndPCAndNeglect(bool can_enqueue, bool is_mem_inst_ready, uint32_t inst);
 
   WriteController wc_;
-  // Neglect next instruction if the current instruction loaded from memory is a branch instruction and the predictor
-  // predicts that it will jump.
+  // Neglect next instruction if the current instruction loaded from memory is JAL, or is a branch instruction and that
+  // the predictor predicts that it will jump.
   Register<bool> neglect_;
   const BranchPredictor *bp_;
 };

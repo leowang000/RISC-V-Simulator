@@ -11,7 +11,14 @@
 
 namespace bubble {
 
-Memory::Memory(const Clock &clock) : output_(), to_iu_(), memory_(), wc_data_(clock), wc_inst_(clock) {}
+Memory::Memory(const Clock &clock) :
+    output_(), to_iu_(), memory_(), wc_data_(clock), wc_inst_(clock), is_load_(false) {}
+
+void Memory::Debug() const {
+  std::cout << "Memory:\n";
+  std::cout << "\tto_iu_ = " << to_iu_.GetCur() << "\n";
+  std::cout << "\toutput_ = " << output_.GetCur().ToString() << "\n\n";
+}
 
 void Memory::Init(std::istream &in) {
   std::string str;
@@ -26,15 +33,11 @@ void Memory::Init(std::istream &in) {
     }
     std::istringstream is(str);
     is >> std::hex;
-    uint8_t num;
+    int num;
     while (is >> num) {
       StoreByte(now++, num);
     }
   }
-}
-
-bool Memory::IsDataReady() const {
-  return wc_data_.IsReady();
 }
 
 bool Memory::IsDataBusy() const {
@@ -43,10 +46,6 @@ bool Memory::IsDataBusy() const {
 
 bool Memory::IsInstReady() const {
   return wc_inst_.IsReady();
-}
-
-bool Memory::IsInstBusy() const {
-  return wc_inst_.IsBusy();
 }
 
 void Memory::Update() {
@@ -64,16 +63,21 @@ void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, cons
     wc_inst_.Set(write_func, 1);
   }
   if (wc_data_.IsBusy()) {
-    if (rb.flush_.GetCur().flush_) {
+    if (rb.flush_.GetCur().flush_ && is_load_) {
       wc_data_.Reset();
+      Flush();
+      is_load_ = false;
     }
   }
   else {
     if (lsb.to_mem_.GetCur().load_ || rb.to_mem_.GetCur().store_) {
-      auto write_func = [this, from_lsb = lsb.to_mem_.GetCur(), from_rb = rb.to_mem_.GetCur()]() {
-        WriteToOutput(from_lsb, from_rb);
+      auto write_func = [this, flush = rb.flush_.GetCur().flush_, from_lsb = lsb.to_mem_.GetCur(),
+          from_rb = rb.to_mem_.GetCur()]() {
+        WriteOutput(from_lsb, from_rb);
+        is_load_ = false;
       };
       wc_data_.Set(write_func, 3);
+      is_load_ = lsb.to_mem_.GetCur().load_;
     }
     else {
       output_.New().done_ = false;
@@ -122,7 +126,11 @@ void Memory::StoreByte(uint32_t addr, uint8_t num) {
   memory_[addr / PageSize][addr % PageSize] = num;
 }
 
-void Memory::WriteToOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb) {
+void Memory::Flush() {
+  output_.New().done_ = false;
+}
+
+void Memory::WriteOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb) {
   output_.New().done_ = false;
   output_.New().id_ = from_lsb.id_;
   if (from_lsb.load_) {

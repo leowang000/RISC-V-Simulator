@@ -12,6 +12,20 @@ RegisterFile::RegisterFile(const Clock &clock) : wc_(clock), value_(), status_()
   }
 }
 
+void RegisterFile::Debug(const ReorderBuffer &rb) const {
+  std::cout << "Register File:\n";
+  std::cout << "\tid\tV\tV_r\tQ\tQ_r\t\tid\tV\tV_r\tQ\tQ_r\n";
+  auto reg_value = GetRegisterValue(rb);
+  auto reg_status = GetRegisterStatus(rb);
+  for (int i = 0; i < kXLen / 2; i++) {
+    std::cout << "\t" << i << "\t" << value_[i].GetCur() << "\t" << reg_value[i] << "\t" << status_[i].GetCur() << "\t"
+              << reg_status[i] << "\t\t" << i + kXLen / 2 << "\t" << value_[i + kXLen / 2].GetCur() << "\t"
+              << reg_value[i + kXLen / 2] << "\t" << status_[i + kXLen / 2].GetCur() << "\t"
+              << reg_status[i + kXLen / 2] << "\n";
+  }
+  std::cout << "\n";
+}
+
 std::array<uint32_t, kXLen> RegisterFile::GetRegisterValue(const ReorderBuffer &rb) const {
   std::array<uint32_t, kXLen> res;
   res[0] = 0;
@@ -26,8 +40,9 @@ std::array<int, kXLen> RegisterFile::GetRegisterStatus(const ReorderBuffer &rb) 
   std::array<int, kXLen> res;
   res[0] = -1;
   for (int i = 1; i < kXLen; i++) {
+    int prev_begin_id = rb.rb_.GetCur().BeginId() == 0 ? kRoBSize : rb.rb_.GetCur().BeginId() - 1;
     res[i] = rb.to_rf_.GetCur().write_ && i == rb.to_rf_.GetCur().rd_ &&
-             rb.rb_.GetCur().BeginId() == status_[i].GetCur() ? -1 : status_[i].GetCur();
+             prev_begin_id == status_[i].GetCur() ? -1 : status_[i].GetCur();
   }
   return res;
 }
@@ -55,7 +70,7 @@ void RegisterFile::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, c
       Flush();
       return;
     }
-    RemoveDependencyAndWrite(from_rb, rb_begin_id);
+    RemoveDependencyAndWrite(from_rb, rb_begin_id == 0 ? kRoBSize : rb_begin_id - 1);
     AddDependency(stall, from_decoder, rb_end_id);
   };
   wc_.Set(write_func, 1);

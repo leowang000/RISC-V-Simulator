@@ -1,22 +1,25 @@
 #include <cstdint>
+#include <fstream>
+#include <iomanip>
 #include <iostream>
 
 #include "src/CPU.h"
 
 int main() {
-  uint8_t output;
+  uint32_t output;
   bubble::CPU cpu;
-  cpu.LoadMemory("/../testcases/naive.data");
-  try {
-    while (true) {
-      cpu.Update();
-      cpu.Execute();
-      cpu.Write();
-      cpu.clock_.Tick();
-    }
-  }catch (const std::string & err) {
-    output = cpu.Halt();
+  cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/naive.data");
+  cpu.clock_.Run();
+  freopen("debug.txt", "w", stdout);
+  std::cout << std::boolalpha;
+  while (!cpu.ShouldHalt()) {
+    cpu.Update();
+    cpu.Debug();
+    cpu.Execute();
+    cpu.Write();
+    cpu.clock_.Tick();
   }
+  output = cpu.Halt();
   std::cout << output;
   return 0;
 }

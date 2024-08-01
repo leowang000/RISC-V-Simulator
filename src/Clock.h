@@ -2,6 +2,7 @@
 #define RISC_V_SIMULATOR_CLOCK_H
 
 #include <cstdint>
+#include <string>
 
 namespace bubble {
 
@@ -9,6 +10,7 @@ class Clock {
  public:
   Clock();
 
+  void Debug() const;
   void Run();
   void Stop();
   void Reset();

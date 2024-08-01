@@ -10,6 +10,16 @@ namespace bubble {
 
 ReservationStation::ReservationStation(const Clock &clock) : rs_(), to_alu_(), wc_(clock) {}
 
+void ReservationStation::Debug() const {
+  std::cout << "Reservation Station:\n";
+  std::cout << "\trs_ = {\n";
+  for (int i = 0; i < kRSSize; i++) {
+    std::cout << "\t" << i << "\t" << rs_.GetCur()[i].ToString() << "\n";
+  }
+  std::cout << "\t}\n";
+  std::cout << "\tto_alu_ = " << to_alu_.GetCur().ToString() << "\n\n";
+}
+
 bool ReservationStation::IsFull() const {
   for (int i = 0; i < kRSSize; i++) {
     if (!rs_.GetCur()[i].busy_) {
@@ -41,7 +51,7 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
     }
     InsertInst(stall, from_decoder, reg_value, reg_status, rb_queue);
     UpdateDependencies(from_mem, from_alu);
-    int rs_id = WriteToToALU(rb_queue);
+    int rs_id = WriteToALU(rb_queue);
     if (rs_id != -1) {
       rs_.New()[rs_id].busy_ = false;
     }
@@ -132,8 +142,8 @@ void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decode
   }
   else {
     if (rb_queue[rs_entry.Q1_].done_) {
-      rs_entry.Q1_ = -1;
       rs_entry.V1_ = rb_queue[rs_entry.Q1_].val_;
+      rs_entry.Q1_ = -1;
     }
   }
   if (two_op) {
@@ -143,8 +153,8 @@ void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decode
     }
     else {
       if (rb_queue[rs_entry.Q2_].done_) {
-        rs_entry.Q2_ = -1;
         rs_entry.V2_ = rb_queue[rs_entry.Q2_].val_;
+        rs_entry.Q2_ = -1;
       }
     }
   }
@@ -186,7 +196,7 @@ void ReservationStation::UpdateDependencies(const MemoryOutput &from_mem, const 
   }
 }
 
-int ReservationStation::WriteToToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_queue) {
+int ReservationStation::WriteToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_queue) {
   to_alu_.New().execute_ = false;
   int rs_id = -1;
   for (int i = 0; i < kRSSize; i++) {

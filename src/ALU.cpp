@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ALU.h"
 #include "ReorderBuffer.h"
 #include "ReservationStation.h"
@@ -5,6 +7,11 @@
 namespace bubble {
 
 ALU::ALU(const Clock &clock) : output_(), wc_(clock) {}
+
+void ALU::Debug() const {
+  std::cout << "ALU:\n";
+  std::cout << "\toutput_ = " << output_.GetCur().ToString() << "\n\n";
+}
 
 void ALU::Update() {
   output_.Update();
@@ -20,7 +27,7 @@ void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
       Flush();
       return;
     }
-    WriteToOutput(from_rs);
+    WriteOutput(from_rs);
   };
   wc_.Set(write_func, 1);
 }
@@ -37,7 +44,7 @@ void ALU::Flush() {
   output_.New().done_ = false;
 }
 
-void ALU::WriteToOutput(const RSToALU &from_rs) {
+void ALU::WriteOutput(const RSToALU &from_rs) {
   output_.New().done_ = false;
   if (!from_rs.execute_) {
     return;

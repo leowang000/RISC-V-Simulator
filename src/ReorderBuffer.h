@@ -24,6 +24,7 @@ class ReorderBuffer {
  public:
   ReorderBuffer(const Clock &clock, BranchPredictor &bp);
 
+  void Debug(const Memory &memory, const ALU &alu) const;
   bool IsFull() const;
   CircularQueue<RoBEntry, kRoBSize> GetRB(const Memory &memory, const ALU &alu) const;
   void Update();
@@ -36,18 +37,18 @@ class ReorderBuffer {
   Register<RobToRF> to_rf_;
   Register<RobToMemory> to_mem_;
   Register<FlushInfo> flush_;
+  bool halt_;
 
  private:
+  void Flush();
   void EnqueueInst(bool stall, const DecoderOutput &from_decoder);
   void UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu, const LSBEntry &lsb_front);
-  void WriteToToRF(bool commit, bool is_front_branch_or_store_inst, const RoBEntry &rb_entry);
-  void WriteToToMem(bool commit, bool is_front_store_inst, const RoBEntry &rb_entry);
-  bool WriteToFlush(bool commit, const RoBEntry &rb_entry);
-  void UpdateBranchPredictor(bool commit, bool correct, const RoBEntry &rb_entry);
+  void WriteToRF(bool commit, bool is_front_branch_or_store_inst, const RoBEntry &rb_entry);
+  void WriteToMem(bool commit, bool is_front_store_inst, const RoBEntry &rb_entry);
+  bool WriteFlush(bool commit, const RoBEntry &rb_entry);
 
   WriteController wc_;
   BranchPredictor *bp_;
-  bool halt_;
 };
 
 }

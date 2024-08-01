@@ -22,11 +22,10 @@ class Memory {
  public:
   explicit Memory(const Clock &clock);
 
+  void Debug() const;
   void Init(std::istream &in);
-  bool IsDataReady() const;
   bool IsDataBusy() const;
   bool IsInstReady() const;
-  bool IsInstBusy() const;
   void Update();
   void Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, const ReorderBuffer &rb);
   void Write();
@@ -44,10 +43,12 @@ class Memory {
   void StoreWord(uint32_t addr, uint32_t num);
   void StoreHalf(uint32_t addr, uint16_t num);
   void StoreByte(uint32_t addr, uint8_t num);
-  void WriteToOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb);
+  void Flush();
+  void WriteOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb);
 
   std::unordered_map<uint32_t, std::array<uint8_t, PageSize>> memory_;
   WriteController wc_data_, wc_inst_;
+  bool is_load_;
 };
 
 }
