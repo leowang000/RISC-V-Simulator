@@ -9,11 +9,11 @@
 
 namespace bubble {
 
-constexpr int kInstQueueSize = 3;
+constexpr int kInstQueueSize = 32;
 constexpr int kXLen = 32;
-constexpr int kRoBSize = 2;
-constexpr int kRSSize = 2;
-constexpr int kLSBSize = 2;
+constexpr int kRoBSize = 32;
+constexpr int kRSSize = 32;
+constexpr int kLSBSize = 32;
 
 enum InstType {
   kLUI, kAUIPC, kJAL, kJALR, kBEQ, kBNE, kBLT, kBGE, kBLTU, kBGEU, kLB, kLH, kLW, kLBU, kLHU, kSB, kSH, kSW, kADDI,
