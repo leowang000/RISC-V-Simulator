@@ -31,7 +31,9 @@ class WriteController {
   void ForceWrite() const;
 
  private:
+ public:
   const Clock *clock_;
+ private:
   Register<uint32_t> done_;
   std::function<void()> write_func_;
   bool busy_;

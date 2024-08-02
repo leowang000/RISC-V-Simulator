@@ -8,7 +8,8 @@
 namespace bubble {
 
 ReorderBuffer::ReorderBuffer(const Clock &clock, BranchPredictor &bp) :
-    rb_(), to_rf_(), to_mem_(), flush_(), wc_(clock), bp_(&bp), halt_(false) {}
+    rb_(), to_rf_(), to_mem_(), flush_(), wc_(clock), bp_(&bp), halt_(false), pc_f_("pc.txt"), pc_with_cycle_cnt_f_(
+    "pc_cycle.txt") {}
 
 void ReorderBuffer::Debug(const Memory &memory, const ALU &alu) const {
   std::cout << "Reorder Buffer:\n";
@@ -62,14 +63,15 @@ void ReorderBuffer::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
     return;
   }
   auto write_func = [this, is_mem_busy = memory.IsDataBusy(), from_mem = memory.output_.GetCur(),
-      from_alu = alu.output_.GetCur(), from_decoder = decoder.output_.GetCur(), lsb_front = lsb.lsb_.GetCur().Front(),
-      stall = decoder.IsStallNeeded(IsFull(), rs.IsFull(), lsb.IsFull())]() {
+      from_alu = alu.output_.GetCur(), from_decoder = decoder.output_.GetCur(),
+      stall = decoder.IsStallNeeded(IsFull(), rs.IsFull(), lsb.IsFull()),
+      is_lsb_empty = lsb.lsb_.GetCur().IsEmpty(), lsb_front = lsb.lsb_.GetCur().Front()]() {
     if (flush_.GetCur().flush_) {
       Flush();
       return;
     }
     EnqueueInst(stall, from_decoder);
-    UpdateDependencies(from_mem, from_alu, lsb_front);
+    UpdateDependencies(from_mem, from_alu, is_lsb_empty, lsb_front);
     bool is_empty = rb_.GetCur().IsEmpty();
     bool is_front_store_inst = !is_empty &&
                                (rb_.GetCur().Front().inst_type_ == kSB || rb_.GetCur().Front().inst_type_ == kSH ||
@@ -84,6 +86,10 @@ void ReorderBuffer::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
     WriteToMem(commit, is_front_store_inst, rb_.GetCur().Front());
     if (commit) {
       halt_ = rb_.GetCur().Front().inst_type_ == kHALT;
+//      static int counter = 0;
+//      pc_f_ << std::dec << counter << ": " << std::hex << rb_.New().Front().addr_ << std::endl;
+//      pc_with_cycle_cnt_f_ << std::dec << counter << ": " << wc_.clock_->GetCycleCount() << std::endl;
+//      counter++;
       rb_.New().Dequeue();
     }
     bool flush = WriteFlush(commit, rb_.GetCur().Front());
@@ -152,7 +158,8 @@ void ReorderBuffer::EnqueueInst(bool stall, const DecoderOutput &from_decoder) {
 }
 
 void
-ReorderBuffer::UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu, const LSBEntry &lsb_front) {
+ReorderBuffer::UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu, bool is_lsb_empty,
+                                  const LSBEntry &lsb_front) {
   if (from_mem.done_) {
     rb_.New()[from_mem.id_].val_ = from_mem.val_;
     rb_.New()[from_mem.id_].done_ = true;
@@ -166,7 +173,7 @@ ReorderBuffer::UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput 
     }
     rb_.New()[from_alu.id_].done_ = true;
   }
-  if ((lsb_front.inst_type_ == kSB || lsb_front.inst_type_ == kSH || lsb_front.inst_type_ == kSW) &&
+  if (!is_lsb_empty && (lsb_front.inst_type_ == kSB || lsb_front.inst_type_ == kSH || lsb_front.inst_type_ == kSW) &&
       lsb_front.Q1_ == -1 && lsb_front.Q2_ == -1) {
     rb_.New()[lsb_front.id_].dest_ = lsb_front.V1_;
     rb_.New()[lsb_front.id_].val_ = lsb_front.V2_;
@@ -206,7 +213,7 @@ bool ReorderBuffer::WriteFlush(bool commit, const RoBEntry &rb_entry) {
     case kBGE:
     case kBLTU:
     case kBGEU:
-      flush = rb_entry.is_jump_predicted_ == rb_entry.val_;
+      flush = rb_entry.is_jump_predicted_ != rb_entry.val_;
       break;
     default:
       flush = false;

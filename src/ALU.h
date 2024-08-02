@@ -4,7 +4,7 @@
 #include "utils/WriteController.h"
 
 #include "Clock.h"
-#include "TypeDef.h"
+#include "config.h"
 
 namespace bubble {
 

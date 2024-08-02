@@ -62,15 +62,15 @@ void InstructionUnit::ForceWrite() {
 void InstructionUnit::Flush(uint32_t pc) {
   pc_.Write(pc);
   iq_.New().Clear();
-  to_mem_.Write(IUToMemory(true, pc));
+  to_mem_.Write(IUToMemory(false, pc));
   to_decoder_.New().get_inst_ = false;
   neglect_.Write(false);
 }
 
 void InstructionUnit::WriteToDecoder(bool dequeue) {
   if (dequeue) {
-    const InstQueueEntry &back = iq_.GetCur().Back();
-    to_decoder_.Write(IUToDecoder(true, back.inst_, back.addr_, back.jump_));
+    const InstQueueEntry &front = iq_.GetCur().Front();
+    to_decoder_.Write(IUToDecoder(true, front.inst_, front.addr_, front.jump_));
     iq_.New().Dequeue();
   }
   else {

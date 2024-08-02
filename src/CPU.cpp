@@ -12,7 +12,7 @@ CPU::CPU() :
     clock_, bp_), rs_(clock_) {}
 
 void CPU::Debug() {
-  if (clock_.GetCycleCount() >= 150) {
+  if (clock_.GetCycleCount() >= 100000) {
     return;
   }
   clock_.Debug();

@@ -1,5 +1,5 @@
-#ifndef RISC_V_SIMULATOR_TYPEDEF_H
-#define RISC_V_SIMULATOR_TYPEDEF_H
+#ifndef RISC_V_SIMULATOR_CONFIG_H
+#define RISC_V_SIMULATOR_CONFIG_H
 
 #include <cstdint>
 #include <iostream>
@@ -320,4 +320,4 @@ struct ALUOutput {
 
 }
 
-#endif //RISC_V_SIMULATOR_TYPEDEF_H
+#endif //RISC_V_SIMULATOR_CONFIG_H

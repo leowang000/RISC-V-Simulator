@@ -16,8 +16,12 @@ add_executable(code
         src/RegisterFile.cpp
         src/ReorderBuffer.cpp
         src/ReservationStation.cpp
-        src/TypeDef.cpp
+        src/config.cpp
         src/utils/WriteController.cpp
+)
+
+add_executable(test
+        test.cpp
 )
 
 target_include_directories(code PRIVATE

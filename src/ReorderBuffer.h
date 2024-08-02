@@ -3,6 +3,7 @@
 
 #include <array>
 #include <cstdint>
+#include <fstream>
 
 #include "utils/CircularQueue.h"
 #include "utils/Register.h"
@@ -10,7 +11,7 @@
 
 #include "BranchPredictor.h"
 #include "Clock.h"
-#include "TypeDef.h"
+#include "config.h"
 
 namespace bubble {
 
@@ -42,13 +43,15 @@ class ReorderBuffer {
  private:
   void Flush();
   void EnqueueInst(bool stall, const DecoderOutput &from_decoder);
-  void UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu, const LSBEntry &lsb_front);
+  void UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu, bool is_lsb_empty,
+                          const LSBEntry &lsb_front);
   void WriteToRF(bool commit, bool is_front_branch_or_store_inst, const RoBEntry &rb_entry);
   void WriteToMem(bool commit, bool is_front_store_inst, const RoBEntry &rb_entry);
   bool WriteFlush(bool commit, const RoBEntry &rb_entry);
 
   WriteController wc_;
   BranchPredictor *bp_;
+  std::ofstream pc_f_, pc_with_cycle_cnt_f_;
 };
 
 }
