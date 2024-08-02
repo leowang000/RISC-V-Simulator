@@ -23,6 +23,7 @@ class CPU {
 
   void Debug();
   void LoadMemory(const std::string &path);
+  void LoadMemory();
   void Update();
   void Execute();
   void Write();

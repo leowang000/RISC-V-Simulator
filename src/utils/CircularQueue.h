@@ -26,6 +26,7 @@ class CircularQueue {
   T &operator[](int index);
   const T &operator[](int index) const;
   void Clear();
+  int Size() const;
 
  private:
   T data_[capacity + 1];
@@ -106,6 +107,14 @@ const T &CircularQueue<T, capacity>::operator[](int index) const {
 template<class T, int capacity>
 void CircularQueue<T, capacity>::Clear() {
   rear_ = front_;
+}
+
+template<class T, int capacity>
+int CircularQueue<T, capacity>::Size() const {
+  if (rear_ >= front_) {
+    return rear_ - front_;
+  }
+  return capacity - front_ + 1 + rear_;
 }
 
 }

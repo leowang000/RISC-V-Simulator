@@ -31,7 +31,7 @@ class Memory {
   void Write();
   void ForceWrite();
 
-  Register<uint32_t> to_iu_;
+  Register<MemoryToIU> to_iu_;
   Register<MemoryOutput> output_;
 
  private:

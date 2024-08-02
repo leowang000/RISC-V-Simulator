@@ -33,7 +33,7 @@ class InstructionUnit {
 
   Register<uint32_t> pc_;
   Register<CircularQueue<InstQueueEntry, kInstQueueSize>> iq_;
-  Register<bool> to_mem_;
+  Register<IUToMemory> to_mem_;
   Register<IUToDecoder> to_decoder_;
 
  private:
@@ -53,9 +53,9 @@ class InstructionUnit {
                             (GetSub(inst, 11, 8) << 1), 12));
   }
 
-  void Flush(uint32_t pc, bool is_memory_ready);
+  void Flush(uint32_t pc);
   void WriteToDecoder(bool dequeue);
-  void WriteToMemoryAndPCAndNeglect(bool can_enqueue, bool is_mem_inst_ready, uint32_t inst);
+  void WriteOthers(const MemoryToIU &from_mem);
 
   WriteController wc_;
   // Neglect next instruction if the current instruction loaded from memory is JAL, or is a branch instruction and that

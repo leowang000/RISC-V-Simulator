@@ -9,11 +9,11 @@
 
 namespace bubble {
 
-constexpr int kInstQueueSize = 4;
+constexpr int kInstQueueSize = 3;
 constexpr int kXLen = 32;
-constexpr int kRoBSize = 6;
-constexpr int kRSSize = 5;
-constexpr int kLSBSize = 4;
+constexpr int kRoBSize = 2;
+constexpr int kRSSize = 2;
+constexpr int kLSBSize = 2;
 
 enum InstType {
   kLUI, kAUIPC, kJAL, kJALR, kBEQ, kBNE, kBLT, kBGE, kBLTU, kBGEU, kLB, kLH, kLW, kLBU, kLHU, kSB, kSH, kSW, kADDI,
@@ -92,6 +92,22 @@ struct InstQueueEntry {
     std::stringstream sstr;
     sstr << std::boolalpha;
     sstr << "{ inst_ = " << inst_ << ", addr_ = " << addr_ << ", jump_ = " << jump_ << " }";
+    return sstr.str();
+  }
+};
+
+struct IUToMemory {
+  bool load_ = false;
+  uint32_t pc_ = 0;
+
+  IUToMemory() = default;
+  IUToMemory(bool load, uint32_t pc);
+  IUToMemory &operator=(const IUToMemory &other) = default;
+
+  std::string ToString() const {
+    std::stringstream sstr;
+    sstr << std::boolalpha;
+    sstr << "{ load_ = " << load_ << ", pc_ = " << pc_ << " }";
     return sstr.str();
   }
 };
@@ -259,6 +275,21 @@ struct RSToALU {
          << ", in1_ = " << in1_ << ", in2_ = " << in2_ << " }";
     return sstr.str();
   }
+};
+
+struct MemoryToIU {
+  uint32_t inst_ = 0, pc_ = 0;
+
+  MemoryToIU() = default;
+  MemoryToIU(uint32_t inst, uint32_t pc);
+  MemoryToIU &operator=(const MemoryToIU &other) = default;
+
+  std::string ToString() const {
+    std::stringstream sstr;
+    sstr << std::boolalpha;
+    sstr << "{ inst_ = " << inst_ << ", pc_ = " << pc_ << " }";
+    return sstr.str();
+  };
 };
 
 struct MemoryOutput {

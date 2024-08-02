@@ -12,7 +12,7 @@ CPU::CPU() :
     clock_, bp_), rs_(clock_) {}
 
 void CPU::Debug() {
-  if (clock_.GetCycleCount() >= 1000) {
+  if (clock_.GetCycleCount() >= 150) {
     return;
   }
   clock_.Debug();
@@ -32,6 +32,10 @@ void CPU::LoadMemory(const std::string &path) {
   memory_.Init(in);
 }
 
+void CPU::LoadMemory() {
+  memory_.Init(std::cin);
+}
+
 void CPU::Update() {
   alu_.Update();
   decoder_.Update();
@@ -44,9 +48,6 @@ void CPU::Update() {
 }
 
 void CPU::Execute() {
-  if (clock_.GetCycleCount() == 0) {
-    iu_.pc_.Write(4);
-  }
   alu_.Execute(rb_, rs_);
   decoder_.Execute(iu_, lsb_, rb_, rs_);
   iu_.Execute(decoder_, lsb_, memory_, rb_, rs_);

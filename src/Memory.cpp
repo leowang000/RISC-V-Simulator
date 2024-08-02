@@ -16,7 +16,7 @@ Memory::Memory(const Clock &clock) :
 
 void Memory::Debug() const {
   std::cout << "Memory:\n";
-  std::cout << "\tto_iu_ = " << to_iu_.GetCur() << "\n";
+  std::cout << "\tto_iu_ = " << to_iu_.GetCur().ToString() << "\n";
   std::cout << "\toutput_ = " << output_.GetCur().ToString() << "\n\n";
 }
 
@@ -56,9 +56,14 @@ void Memory::Update() {
 }
 
 void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, const ReorderBuffer &rb) {
-  if (!wc_inst_.IsBusy() && iu.to_mem_.GetCur()) {
-    auto write_func = [this, pc = iu.pc_.GetCur()]() {
-      to_iu_.Write(LoadWord(pc));
+  if (!wc_inst_.IsBusy()) {
+    auto write_func = [this, flush = rb.flush_.GetCur().flush_, from_iu = iu.to_mem_.GetCur()]() {
+      if (flush) {
+        to_iu_.New().inst_ = 0;
+        return;
+      }
+      to_iu_.New().inst_ = (from_iu.load_ ? LoadWord(from_iu.pc_) : 0);
+      to_iu_.New().pc_ = (from_iu.load_ ? from_iu.pc_ : 0);
     };
     wc_inst_.Set(write_func, 1);
   }
@@ -132,7 +137,6 @@ void Memory::Flush() {
 
 void Memory::WriteOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb) {
   output_.New().done_ = false;
-  output_.New().id_ = from_lsb.id_;
   if (from_lsb.load_) {
     switch (from_lsb.inst_type_) {
       case kLB:
@@ -153,6 +157,8 @@ void Memory::WriteOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb
       default:
         return;
     }
+    output_.New().id_ = from_lsb.id_;
+    output_.New().done_ = true;
   }
   if (from_rb.store_) {
     switch (from_rb.inst_type_) {
@@ -169,7 +175,6 @@ void Memory::WriteOutput(const LSBToMemory &from_lsb, const RobToMemory &from_rb
         return;
     }
   }
-  output_.New().done_ = true;
   return;
 }
 

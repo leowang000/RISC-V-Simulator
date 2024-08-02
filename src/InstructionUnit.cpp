@@ -8,7 +8,7 @@
 namespace bubble {
 
 InstructionUnit::InstructionUnit(const Clock &clock, const BranchPredictor &bp) :
-    pc_(), iq_(), to_mem_(true), to_decoder_(), neglect_(), wc_(clock), bp_(&bp) {}
+    pc_(), iq_(), to_mem_(), to_decoder_(), neglect_(), wc_(clock), bp_(&bp) {}
 
 void InstructionUnit::Debug() const {
   std::cout << "Instruction Unit:\n";
@@ -18,7 +18,7 @@ void InstructionUnit::Debug() const {
     std::cout << "\t" << i << "\t" << iq_.GetCur()[i].ToString() << "\n";
   }
   std::cout << "\t}\n";
-  std::cout << "\tto_mem_ = " << to_mem_.GetCur() << "\n";
+  std::cout << "\tto_mem_ = " << to_mem_.GetCur().ToString() << "\n";
   std::cout << "\tto_decoder_ = " << to_decoder_.GetCur().ToString() << "\n\n";
 }
 
@@ -36,19 +36,17 @@ void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, flush_info = rb.flush_.GetCur(), is_mem_inst_ready = memory.IsInstReady(),
-      stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull()), inst = memory.to_iu_.GetCur()]() {
-    bool flush = flush_info.flush_;
-    if (flush) {
-      Flush(flush_info.pc_, is_mem_inst_ready);
+  auto write_func = [this, flush_info = rb.flush_.GetCur(), from_mem = memory.to_iu_.GetCur(),
+      stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull())]() {
+    if (flush_info.flush_) {
+      Flush(flush_info.pc_);
       return;
     }
     bool dequeue = !stall && !iq_.GetCur().IsEmpty();
     if (!stall) {
       WriteToDecoder(dequeue);
     }
-    bool can_enqueue = !iq_.GetCur().IsFull() || dequeue;
-    WriteToMemoryAndPCAndNeglect(can_enqueue, is_mem_inst_ready, inst);
+    WriteOthers(from_mem);
   };
   wc_.Set(write_func, 1);
 }
@@ -61,14 +59,12 @@ void InstructionUnit::ForceWrite() {
   wc_.ForceWrite();
 }
 
-void InstructionUnit::Flush(uint32_t pc, bool is_memory_ready) {
+void InstructionUnit::Flush(uint32_t pc) {
   pc_.Write(pc);
   iq_.New().Clear();
-  to_mem_.Write(true);
+  to_mem_.Write(IUToMemory(true, pc));
   to_decoder_.New().get_inst_ = false;
-  if (is_memory_ready) {
-    neglect_.Write(true);
-  }
+  neglect_.Write(false);
 }
 
 void InstructionUnit::WriteToDecoder(bool dequeue) {
@@ -82,28 +78,24 @@ void InstructionUnit::WriteToDecoder(bool dequeue) {
   }
 }
 
-void InstructionUnit::WriteToMemoryAndPCAndNeglect(bool can_enqueue, bool is_mem_inst_ready, uint32_t inst) {
-  to_mem_.Write(can_enqueue);
-  if (can_enqueue) {
-    if (IsJAL(inst) || (IsBranchInst(inst) && bp_->Predict(pc_.GetCur() - 4))) {
-      pc_.Write(GetJumpOrBranchDest(inst, pc_.GetCur() - 4));
-    }
-    else {
-      pc_.Write(pc_.GetCur() + 4);
-    }
+void InstructionUnit::WriteOthers(const MemoryToIU &from_mem) {
+  if (neglect_.GetCur()) {
+    to_mem_.Write(IUToMemory());
+    neglect_.Write(false);
+    return;
   }
-  if (is_mem_inst_ready && can_enqueue) {
-    if (neglect_.GetCur()) {
-      neglect_.Write(false);
-    }
-    else {
-      if (IsBranchInst(inst)) {
-        iq_.New().Enqueue(InstQueueEntry(inst, pc_.GetCur() - 4, bp_->Predict(pc_.GetCur() - 4)));
-      }
-      else {
-        iq_.New().Enqueue(InstQueueEntry(inst, pc_.GetCur() - 4, false));
-      }
-      neglect_.Write((IsJAL(inst) || (IsBranchInst(inst) && bp_->Predict(pc_.GetCur() - 4))));
+  bool load_from_mem = (iq_.GetCur().Size() <= kInstQueueSize - 3);
+  if (load_from_mem) {
+    pc_.Write(pc_.GetCur() + 4);
+  }
+  to_mem_.Write(IUToMemory(load_from_mem, pc_.GetCur()));
+  if (from_mem.inst_ != 0) {
+    bool jump = IsJAL(from_mem.inst_) || (IsBranchInst(from_mem.inst_) && bp_->Predict(from_mem.inst_));
+    iq_.New().Enqueue(InstQueueEntry(from_mem.inst_, from_mem.pc_, jump));
+    if (jump) {
+      pc_.Write(GetJumpOrBranchDest(from_mem.inst_, from_mem.pc_));
+      to_mem_.Write(IUToMemory());
+      neglect_.Write(true);
     }
   }
 }
