@@ -8,7 +8,7 @@ int main() {
   uint32_t output;
   bubble::CPU cpu;
   // cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/naive.data");
-   cpu.LoadMemory();
+  cpu.LoadMemory();
   cpu.clock_.Run();
   // freopen("debug.txt", "w", stdout);
   std::cout << std::boolalpha;

@@ -3,6 +3,8 @@ project(RISC_V_Simulator)
 
 set(CMAKE_CXX_STANDARD 17)
 
+include_directories(${CMAKE_SOURCE_DIR}/src)
+
 add_executable(code
         main.cpp
         src/ALU.cpp
@@ -22,8 +24,4 @@ add_executable(code
 
 add_executable(test
         test.cpp
-)
-
-target_include_directories(code PRIVATE
-        ${CMAKE_SOURCE_DIR}/src
 )
