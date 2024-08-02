@@ -24,6 +24,8 @@ class ReservationStation;
 class ReorderBuffer {
  public:
   ReorderBuffer(const Clock &clock, BranchPredictor &bp);
+  ReorderBuffer(const Clock &clock, BranchPredictor &bp, const std::string &pc_file_name,
+                const std::string pc_with_cycle_file_name);
 
   void Debug(const Memory &memory, const ALU &alu) const;
   bool IsFull() const;

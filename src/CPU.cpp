@@ -11,6 +11,10 @@ CPU::CPU() :
     clock_(), bp_(), alu_(clock_), decoder_(clock_), iu_(clock_, bp_), lsb_(clock_), memory_(clock_), rf_(clock_), rb_(
     clock_, bp_), rs_(clock_) {}
 
+CPU::CPU(const std::string &pc_file_name, const std::string pc_with_cycle_file_name) :
+    clock_(), bp_(), alu_(clock_), decoder_(clock_), iu_(clock_, bp_), lsb_(clock_), memory_(clock_), rf_(clock_), rb_(
+    clock_, bp_, pc_file_name, pc_with_cycle_file_name), rs_(clock_) {}
+
 void CPU::Debug() {
   if (clock_.GetCycleCount() >= 100000) {
     return;

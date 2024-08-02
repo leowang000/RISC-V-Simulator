@@ -20,6 +20,7 @@ namespace bubble {
 class CPU {
  public:
   CPU();
+  CPU(const std::string &pc_file_name, const std::string pc_with_cycle_file_name);
 
   void Debug();
   void LoadMemory(const std::string &path);

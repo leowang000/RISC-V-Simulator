@@ -1,4 +1,4 @@
-#include <fstream>
+#undef _DEBUG
 #include <iomanip>
 #include <iostream>
 
@@ -6,15 +6,22 @@
 
 int main() {
   uint32_t output;
-  bubble::CPU cpu;
-  // cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/naive.data");
-  cpu.LoadMemory();
-  cpu.clock_.Run();
-  // freopen("debug.txt", "w", stdout);
+
+#ifdef _DEBUG
+  bubble::CPU cpu("pc", "pc_with_cycle");
+  cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/naive.data");
+  freopen("debug.txt", "w", stdout);
   std::cout << std::boolalpha;
+#else
+  bubble::CPU cpu;
+  cpu.LoadMemory();
+#endif
+  cpu.clock_.Run();
   while (!cpu.ShouldHalt()) {
     cpu.Update();
-    // cpu.Debug();
+#ifdef _DEBUG
+    cpu.Debug();
+#endif
     cpu.Execute();
     cpu.Write();
     cpu.clock_.Tick();

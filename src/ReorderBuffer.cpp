@@ -8,8 +8,12 @@
 namespace bubble {
 
 ReorderBuffer::ReorderBuffer(const Clock &clock, BranchPredictor &bp) :
-    rb_(), to_rf_(), to_mem_(), flush_(), wc_(clock), bp_(&bp), halt_(false), pc_f_("pc.txt"), pc_with_cycle_cnt_f_(
-    "pc_cycle.txt") {}
+    rb_(), to_rf_(), to_mem_(), flush_(), wc_(clock), bp_(&bp), halt_(false), pc_f_(), pc_with_cycle_cnt_f_() {}
+
+ReorderBuffer::ReorderBuffer(const Clock &clock, BranchPredictor &bp, const std::string &pc_file_name,
+                             const std::string pc_with_cycle_file_name) :
+    rb_(), to_rf_(), to_mem_(), flush_(), wc_(clock), bp_(&bp), halt_(false), pc_f_(pc_file_name), pc_with_cycle_cnt_f_(
+    pc_with_cycle_file_name) {}
 
 void ReorderBuffer::Debug(const Memory &memory, const ALU &alu) const {
   std::cout << "Reorder Buffer:\n";
