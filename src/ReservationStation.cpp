@@ -67,8 +67,8 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rf, &rb, &decoder, &memory, &alu,
-      stall = decoder.IsStallNeeded(rb.IsFull(), IsFull(), lsb.IsFull())]() {
+  auto write_func = [this, &rf, &rb, &decoder, &memory, &alu, &lsb]() {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
       Flush();
       return;

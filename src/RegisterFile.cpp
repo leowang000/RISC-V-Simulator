@@ -99,7 +99,8 @@ void RegisterFile::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, c
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull()), &rb, &decoder]() {
+  auto write_func = [this, &rs, &lsb, &rb, &decoder]() {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
       Flush();
       return;

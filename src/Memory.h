@@ -49,6 +49,10 @@ class Memory {
   std::unordered_map<uint32_t, std::array<uint8_t, PageSize>> memory_;
   WriteController wc_data_, wc_inst_;
   bool is_load_;
+#ifndef _DEBUG
+  LSBToMemory from_lsb_;
+  RobToMemory from_rb_;
+#endif
 };
 
 }

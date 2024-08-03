@@ -57,7 +57,8 @@ void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rb, &memory, stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull())]() {
+  auto write_func = [this, &rb, &decoder, &rs, &lsb, &memory]() {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
       Flush(rb.flush_.GetCur().pc_);
       return;

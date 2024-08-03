@@ -123,8 +123,8 @@ void ReorderBuffer::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &memory, &alu, &decoder, &lsb,
-      stall = decoder.IsStallNeeded(IsFull(), rs.IsFull(), lsb.IsFull())]() {
+  auto write_func = [this, &memory, &alu, &decoder, &lsb, &rs]() {
+    bool stall = decoder.IsStallNeeded(IsFull(), rs.IsFull(), lsb.IsFull());
     if (flush_.GetCur().flush_) {
       Flush();
       return;

@@ -55,6 +55,7 @@ void Memory::Update() {
   wc_inst_.Update();
 }
 
+#ifdef _DEBUG
 void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, const ReorderBuffer &rb) {
   if (!wc_inst_.IsBusy()) {
     auto write_func = [this, flush = rb.flush_.GetCur().flush_, from_iu = iu.to_mem_.GetCur()]() {
@@ -76,8 +77,7 @@ void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, cons
   }
   else {
     if (lsb.to_mem_.GetCur().load_ || rb.to_mem_.GetCur().store_) {
-      auto write_func = [this, flush = rb.flush_.GetCur().flush_, from_lsb = lsb.to_mem_.GetCur(),
-          from_rb = rb.to_mem_.GetCur()]() {
+      auto write_func = [this, from_lsb = lsb.to_mem_.GetCur(), from_rb = rb.to_mem_.GetCur()]() {
         WriteOutput(from_lsb, from_rb);
         is_load_ = false;
       };
@@ -89,6 +89,43 @@ void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, cons
     }
   }
 }
+#else
+void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, const ReorderBuffer &rb) {
+  if (!wc_inst_.IsBusy()) {
+    auto write_func = [this, &rb, &iu]() {
+      if (rb.flush_.GetCur().flush_) {
+        to_iu_.New().inst_ = 0;
+        return;
+      }
+      to_iu_.New().inst_ = (iu.to_mem_.GetCur().load_ ? LoadWord(iu.to_mem_.GetCur().pc_) : 0);
+      to_iu_.New().pc_ = (iu.to_mem_.GetCur().load_ ? iu.to_mem_.GetCur().pc_ : 0);
+    };
+    wc_inst_.Set(write_func, 1);
+  }
+  if (wc_data_.IsBusy()) {
+    if (rb.flush_.GetCur().flush_ && is_load_) {
+      wc_data_.Reset();
+      Flush();
+      is_load_ = false;
+    }
+  }
+  else {
+    if (lsb.to_mem_.GetCur().load_ || rb.to_mem_.GetCur().store_) {
+      from_lsb_ = lsb.to_mem_.GetCur();
+      from_rb_ = rb.to_mem_.GetCur();
+      auto write_func = [this]() {
+        WriteOutput(from_lsb_, from_rb_);
+        is_load_ = false;
+      };
+      wc_data_.Set(write_func, 3);
+      is_load_ = lsb.to_mem_.GetCur().load_;
+    }
+    else {
+      output_.New().done_ = false;
+    }
+  }
+}
+#endif
 
 void Memory::Write() {
   wc_data_.Write();
