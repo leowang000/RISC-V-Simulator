@@ -209,7 +209,7 @@ bool ReorderBuffer::WriteFlush(bool commit, const RoBEntry &rb_entry) {
     return false;
   }
   bool flush;
-  uint32_t dest;
+  uint32_t dest = 0;
   switch (rb_entry.inst_type_) {
     case kJALR:
       flush = true;
@@ -226,6 +226,7 @@ bool ReorderBuffer::WriteFlush(bool commit, const RoBEntry &rb_entry) {
       break;
     default:
       flush = false;
+      break;
   }
   flush_.Write(FlushInfo(flush, dest));
   return flush;
