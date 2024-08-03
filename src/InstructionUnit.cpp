@@ -90,7 +90,7 @@ void InstructionUnit::WriteOthers(const MemoryToIU &from_mem) {
   }
   to_mem_.Write(IUToMemory(load_from_mem, pc_.GetCur()));
   if (from_mem.inst_ != 0) {
-    bool jump = IsJAL(from_mem.inst_) || (IsBranchInst(from_mem.inst_) && bp_->Predict(from_mem.inst_));
+    bool jump = IsJAL(from_mem.inst_) || (IsBranchInst(from_mem.inst_) && bp_->Predict(from_mem.pc_));
     iq_.New().Enqueue(InstQueueEntry(from_mem.inst_, from_mem.pc_, jump));
     if (jump) {
       pc_.Write(GetJumpOrBranchDest(from_mem.inst_, from_mem.pc_));

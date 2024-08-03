@@ -21,7 +21,7 @@ class BranchPredictor {
   }
 
   uint8_t predictor_[kMod];
-  int total_[kMod], correct_[kMod];
+  unsigned long long total_[kMod], correct_[kMod];
 };
 
 }

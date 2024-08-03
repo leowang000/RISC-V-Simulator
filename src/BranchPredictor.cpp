@@ -25,12 +25,15 @@ void BranchPredictor::Update(uint32_t pc, bool jump, bool correct) {
 }
 
 double BranchPredictor::GetAccuracy() const {
-  int total = 0, correct = 0;
+  unsigned long long total = 0, correct = 0;
   for (auto item : total_) {
     total += item;
   }
   for (auto item : correct_) {
     correct += item;
+  }
+  if (total == 0) {
+    return 1;
   }
   return static_cast<double>(correct) / total;
 }

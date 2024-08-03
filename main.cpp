@@ -8,7 +8,7 @@ int main() {
 
 #ifdef _DEBUG
   bubble::CPU cpu("pc.txt", "pc_with_cycle.txt");
-  cpu.LoadMemory("../testcases/pi.data");
+  cpu.LoadMemory("../testcases/multiarray.data");
   freopen("debug.txt", "w", stdout);
   std::cout << std::boolalpha;
 #else
