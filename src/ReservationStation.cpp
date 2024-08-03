@@ -35,6 +35,7 @@ void ReservationStation::Update() {
   wc_.Update();
 }
 
+#ifdef _DEBUG
 void
 ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
                             const ReorderBuffer &rb, const RegisterFile &rf) {
@@ -58,6 +59,30 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   };
   wc_.Set(write_func, 1);
 }
+#else
+void
+ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
+                            const ReorderBuffer &rb, const RegisterFile &rf) {
+  if (wc_.IsBusy()) {
+    return;
+  }
+  auto write_func = [this, flush = rb.flush_.GetCur().flush_, &rf, &rb, from_decoder = decoder.output_.GetCur(),
+      from_mem = memory.output_.GetCur(), from_alu = alu.output_.GetCur(), &memory, &alu,
+      stall = decoder.IsStallNeeded(rb.IsFull(), IsFull(), lsb.IsFull())]() {
+    if (flush) {
+      Flush();
+      return;
+    }
+    InsertInst(stall, from_decoder, rf, rb, memory, alu);
+    UpdateDependencies(from_mem, from_alu);
+    int rs_id = WriteToALU(rb, memory, alu);
+    if (rs_id != -1) {
+      rs_.New()[rs_id].busy_ = false;
+    }
+  };
+  wc_.Set(write_func, 1);
+}
+#endif
 
 void ReservationStation::Write() {
   wc_.Write();
@@ -165,6 +190,97 @@ void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decode
   rs_.New()[rs_id] = rs_entry;
 }
 
+void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decoder, const RegisterFile &rf,
+                                    const ReorderBuffer &rb, const Memory &memory, const ALU &alu) {
+  if (stall || !from_decoder.get_inst_) {
+    return;
+  }
+  bool two_op = false;
+  switch (from_decoder.inst_type_) {
+    case kLUI:
+    case kAUIPC:
+    case kJAL:
+    case kLB:
+    case kLH:
+    case kLW:
+    case kLBU:
+    case kLHU:
+    case kSB:
+    case kSH:
+    case kSW:
+    case kHALT:
+      return;
+    case kJALR:
+    case kADDI:
+    case kSLTI:
+    case kSLTIU:
+    case kXORI:
+    case kORI:
+    case kANDI:
+    case kSLLI:
+    case kSRLI:
+    case kSRAI:
+      break;
+    case kBEQ:
+    case kBNE:
+    case kBLT:
+    case kBGE:
+    case kBLTU:
+    case kBGEU:
+    case kADD:
+    case kSUB:
+    case kSLL:
+    case kSLT:
+    case kSLTU:
+    case kXOR:
+    case kSRL:
+    case kSRA:
+    case kOR:
+    case kAND:
+      two_op = true;
+      break;
+  }
+  RSEntry rs_entry;
+  rs_entry.busy_ = true;
+  rs_entry.id_ = rb.rb_.GetCur().EndId();
+  int rs_id;
+  for (int i = 0; i < kRSSize; i++) {
+    if (!rs_.GetCur()[i].busy_) {
+      rs_id = i;
+      break;
+    }
+  }
+  rs_entry.Q1_ = rf.GetRegisterStatus(from_decoder.rs1_, rb);
+  if (rs_entry.Q1_ == -1) {
+    rs_entry.V1_ = rf.GetRegisterValue(from_decoder.rs1_, rb);
+  }
+  else {
+    RoBEntry rb_Q1 = rb.GetRB(rs_entry.Q1_, memory, alu);
+    if (rb_Q1.done_) {
+      rs_entry.V1_ = rb_Q1.val_;
+      rs_entry.Q1_ = -1;
+    }
+  }
+  if (two_op) {
+    rs_entry.Q2_ = rf.GetRegisterStatus(from_decoder.rs2_, rb);
+    if (rs_entry.Q2_ == -1) {
+      rs_entry.V2_ = rf.GetRegisterValue(from_decoder.rs2_, rb);
+    }
+    else {
+      RoBEntry rb_Q2 = rb.GetRB(rs_entry.Q2_, memory, alu);
+      if (rb_Q2.done_) {
+        rs_entry.V2_ = rb_Q2.val_;
+        rs_entry.Q2_ = -1;
+      }
+    }
+  }
+  else {
+    rs_entry.Q2_ = -1;
+    rs_entry.V2_ = from_decoder.imm_;
+  }
+  rs_.New()[rs_id] = rs_entry;
+}
+
 void ReservationStation::UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu) {
   if (from_mem.done_) {
     for (int i = 0; i < kRSSize; i++) {
@@ -214,6 +330,85 @@ int ReservationStation::WriteToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_q
   to_alu.in2_ = rs_.GetCur()[rs_id].V2_;
   to_alu.id_ = rs_.GetCur()[rs_id].id_;
   switch (rb_queue[rs_.GetCur()[rs_id].id_].inst_type_) {
+    case kJALR:
+    case kADD:
+    case kADDI:
+      to_alu.alu_op_type_ = kAdd;
+      break;
+    case kSUB:
+      to_alu.alu_op_type_ = kSub;
+      break;
+    case kAND:
+    case kANDI:
+      to_alu.alu_op_type_ = kAnd;
+      break;
+    case kOR:
+    case kORI:
+      to_alu.alu_op_type_ = kOr;
+      break;
+    case kXOR:
+    case kXORI:
+      to_alu.alu_op_type_ = kXor;
+      break;
+    case kSLL:
+    case kSLLI:
+      to_alu.alu_op_type_ = kShiftLeftLogical;
+      break;
+    case kSRL:
+    case kSRLI:
+      to_alu.alu_op_type_ = kShiftRightLogical;
+      break;
+    case kSRA:
+    case kSRAI:
+      to_alu.alu_op_type_ = kShiftRightArithmetic;
+      break;
+    case kBEQ:
+      to_alu.alu_op_type_ = kEqual;
+      break;
+    case kBNE:
+      to_alu.alu_op_type_ = kNotEqual;
+      break;
+    case kSLT:
+    case kSLTI:
+    case kBLT:
+      to_alu.alu_op_type_ = kLessThan;
+      break;
+    case kSLTU:
+    case kSLTIU:
+    case kBLTU:
+      to_alu.alu_op_type_ = kLessThanUnsigned;
+      break;
+    case kBGE:
+      to_alu.alu_op_type_ = kGreaterOrEqual;
+      break;
+    case kBGEU:
+      to_alu.alu_op_type_ = kGreaterOrEqualUnsigned;
+      break;
+    default:
+      break;
+  }
+  to_alu_.Write(to_alu);
+  return rs_id;
+}
+
+int ReservationStation::WriteToALU(const ReorderBuffer &rb, const Memory &memory, const ALU &alu) {
+  to_alu_.New().execute_ = false;
+  int rs_id = -1;
+  for (int i = 0; i < kRSSize; i++) {
+    if (rs_.GetCur()[i].busy_ && rs_.GetCur()[i].Q1_ == -1 && rs_.GetCur()[i].Q2_ == -1) {
+      rs_id = i;
+      break;
+    }
+  }
+  if (rs_id == -1) {
+    return -1;
+  }
+  RSToALU to_alu;
+  to_alu.execute_ = true;
+  to_alu.in1_ = rs_.GetCur()[rs_id].V1_;
+  to_alu.in2_ = rs_.GetCur()[rs_id].V2_;
+  to_alu.id_ = rs_.GetCur()[rs_id].id_;
+  switch (rb.GetRB(rs_.GetCur()[rs_id].id_, memory, alu).inst_type_) {
     case kJALR:
     case kADD:
     case kADDI:

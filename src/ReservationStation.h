@@ -37,8 +37,11 @@ class ReservationStation {
   void Flush();
   void InsertInst(bool stall, const DecoderOutput &from_decoder, const std::array<uint32_t, kXLen> &reg_value,
                   const std::array<int, kXLen> &reg_status, const CircularQueue<RoBEntry, kRoBSize> &rb_queue);
+  void InsertInst(bool stall, const DecoderOutput &from_decoder, const RegisterFile &rf, const ReorderBuffer &rb,
+                  const Memory &memory, const ALU &alu);
   void UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu);
   int WriteToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_queue);
+  int WriteToALU(const ReorderBuffer &rb, const Memory &memory, const ALU &alu);
 
   WriteController wc_;
 };

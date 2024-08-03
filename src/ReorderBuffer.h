@@ -30,6 +30,7 @@ class ReorderBuffer {
   void Debug(const Memory &memory, const ALU &alu) const;
   bool IsFull() const;
   CircularQueue<RoBEntry, kRoBSize> GetRB(const Memory &memory, const ALU &alu) const;
+  RoBEntry GetRB(int i, const Memory &memory, const ALU &alu) const;
   void Update();
   void Execute(const ALU &alu, const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
                const ReservationStation &rs);

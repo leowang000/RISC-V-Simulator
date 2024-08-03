@@ -39,6 +39,8 @@ class LoadStoreBuffer {
   void EnqueueInst(bool stall, bool is_new_inst_store, bool is_new_inst_load, const DecoderOutput &from_decoder,
                    const std::array<uint32_t, kXLen> &reg_value, const std::array<int, kXLen> &reg_status,
                    const CircularQueue<RoBEntry, kRoBSize> &rb_queue);
+  void EnqueueInst(bool stall, bool is_new_inst_store, bool is_new_inst_load, const DecoderOutput &from_decoder,
+                   const RegisterFile &rf, const ReorderBuffer &rb, const Memory &memory, const ALU &alu);
   void UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu);
   bool WriteToMemory(bool is_front_load, bool is_mem_busy);
 

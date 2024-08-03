@@ -23,7 +23,9 @@ class RegisterFile {
 
   void Debug(const ReorderBuffer &rb) const;
   std::array<uint32_t, kXLen> GetRegisterValue(const ReorderBuffer &rb) const;
+  uint32_t GetRegisterValue(uint8_t i, const ReorderBuffer &rb) const;
   std::array<int, kXLen> GetRegisterStatus(const ReorderBuffer &rb) const;
+  int GetRegisterStatus(uint8_t i, const ReorderBuffer &rb) const;
   void Update();
   void
   Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const ReorderBuffer &rb, const ReservationStation &rs);

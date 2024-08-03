@@ -53,6 +53,21 @@ ReorderBuffer::GetRB(const Memory &memory, const ALU &alu) const {
   return res;
 }
 
+RoBEntry ReorderBuffer::GetRB(int i, const Memory &memory, const ALU &alu) const {
+  RoBEntry res = rb_.GetCur()[i];
+  if (memory.output_.GetCur().done_ && memory.output_.GetCur().id_ == i) {
+    res.val_ = memory.output_.GetCur().val_;
+    res.done_ = true;
+  }
+  if (alu.output_.GetCur().done_ && alu.output_.GetCur().id_ == i) {
+    if (res.inst_type_ != kJALR) {
+      res.val_ = alu.output_.GetCur().val_;
+    }
+    res.done_ = true;
+  }
+  return res;
+}
+
 void ReorderBuffer::Update() {
   rb_.Update();
   to_rf_.Update();

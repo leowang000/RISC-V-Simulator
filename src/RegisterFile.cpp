@@ -36,6 +36,13 @@ std::array<uint32_t, kXLen> RegisterFile::GetRegisterValue(const ReorderBuffer &
   return res;
 }
 
+uint32_t RegisterFile::GetRegisterValue(uint8_t i, const ReorderBuffer &rb) const {
+  if (i == 0) {
+    return 0;
+  }
+  return rb.to_rf_.GetCur().write_ && i == rb.to_rf_.GetCur().rd_ ? rb.to_rf_.GetCur().val_ : value_[i].GetCur();
+}
+
 std::array<int, kXLen> RegisterFile::GetRegisterStatus(const ReorderBuffer &rb) const {
   std::array<int, kXLen> res;
   res[0] = -1;
@@ -45,6 +52,15 @@ std::array<int, kXLen> RegisterFile::GetRegisterStatus(const ReorderBuffer &rb) 
              prev_begin_id == status_[i].GetCur() ? -1 : status_[i].GetCur();
   }
   return res;
+}
+
+int RegisterFile::GetRegisterStatus(uint8_t i, const bubble::ReorderBuffer &rb) const {
+  if (i == 0) {
+    return 0;
+  }
+  int prev_begin_id = rb.rb_.GetCur().BeginId() == 0 ? kRoBSize : rb.rb_.GetCur().BeginId() - 1;
+  return rb.to_rf_.GetCur().write_ && i == rb.to_rf_.GetCur().rd_ &&
+         prev_begin_id == status_[i].GetCur() ? -1 : status_[i].GetCur();
 }
 
 void RegisterFile::Update() {
