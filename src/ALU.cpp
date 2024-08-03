@@ -18,6 +18,7 @@ void ALU::Update() {
   wc_.Update();
 }
 
+#ifdef _DEBUG
 void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
   if (wc_.IsBusy()) {
     return;
@@ -31,6 +32,23 @@ void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
   };
   wc_.Set(write_func, 1);
 }
+#else
+
+void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
+  if (wc_.IsBusy()) {
+    return;
+  }
+  auto write_func = [this, &rb, &rs]() {
+    if (rb.flush_.GetCur().flush_) {
+      Flush();
+      return;
+    }
+    WriteOutput(rs.to_alu_.GetCur());
+  };
+  wc_.Set(write_func, 1);
+}
+
+#endif
 
 void ALU::Write() {
   wc_.Write();

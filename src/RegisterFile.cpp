@@ -73,6 +73,7 @@ void RegisterFile::Update() {
   wc_.Update();
 }
 
+#ifdef _DEBUG
 void RegisterFile::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const ReorderBuffer &rb,
                            const ReservationStation &rs) {
   if (wc_.IsBusy()) {
@@ -91,6 +92,26 @@ void RegisterFile::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, c
   };
   wc_.Set(write_func, 1);
 }
+#else
+
+void RegisterFile::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const ReorderBuffer &rb,
+                           const ReservationStation &rs) {
+  if (wc_.IsBusy()) {
+    return;
+  }
+  auto write_func = [this, stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull()), &rb, &decoder]() {
+    if (rb.flush_.GetCur().flush_) {
+      Flush();
+      return;
+    }
+    int rb_begin_id = rb.rb_.GetCur().BeginId();
+    RemoveDependencyAndWrite(rb.to_rf_.GetCur(), rb_begin_id == 0 ? kRoBSize : rb_begin_id - 1);
+    AddDependency(stall, decoder.output_.GetCur(), rb.rb_.GetCur().EndId());
+  };
+  wc_.Set(write_func, 1);
+}
+
+#endif
 
 void RegisterFile::Write() {
   wc_.Write();

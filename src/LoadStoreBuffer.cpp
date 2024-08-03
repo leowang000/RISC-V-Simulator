@@ -70,15 +70,14 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, flush = rb.flush_.GetCur().flush_, &rf, rb_to_mem = rb.to_mem_.GetCur(), &rb, &memory, &alu,
-      from_decoder = decoder.output_.GetCur(), from_mem = memory.output_.GetCur(), from_alu = alu.output_.GetCur(),
+  auto write_func = [this, flush = rb.flush_.GetCur().flush_, &rf, &rb, &memory, &alu, &decoder,
       is_mem_busy = memory.IsDataBusy(), stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), IsFull())]() {
     if (flush) {
       Flush();
       return;
     }
     const LSBEntry &lsb_front = lsb_.GetCur().Front();
-    const InstType &from_decoder_inst_type = from_decoder.inst_type_;
+    const InstType &from_decoder_inst_type = decoder.output_.GetCur().inst_type_;
     bool is_front_load = !lsb_.GetCur().IsEmpty() &&
                          (lsb_front.inst_type_ == kLB || lsb_front.inst_type_ == kLH || lsb_front.inst_type_ == kLW ||
                           lsb_front.inst_type_ == kLBU || lsb_front.inst_type_ == kLHU);
@@ -87,10 +86,10 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
                              from_decoder_inst_type == kLHU);
     bool is_new_inst_store = (from_decoder_inst_type == kSB || from_decoder_inst_type == kSH ||
                               from_decoder_inst_type == kSW);
-    EnqueueInst(stall, is_new_inst_store, is_new_inst_load, from_decoder, rf, rb, memory, alu);
-    UpdateDependencies(from_mem, from_alu);
+    EnqueueInst(stall, is_new_inst_store, is_new_inst_load, decoder.output_.GetCur(), rf, rb, memory, alu);
+    UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur());
     bool dequeue_load = WriteToMemory(is_front_load, is_mem_busy);
-    if (dequeue_load || rb_to_mem.store_) {
+    if (dequeue_load || rb.to_mem_.GetCur().store_) {
       lsb_.New().Dequeue();
     }
   };

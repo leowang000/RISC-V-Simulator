@@ -60,21 +60,21 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   wc_.Set(write_func, 1);
 }
 #else
+
 void
 ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
                             const ReorderBuffer &rb, const RegisterFile &rf) {
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, flush = rb.flush_.GetCur().flush_, &rf, &rb, from_decoder = decoder.output_.GetCur(),
-      from_mem = memory.output_.GetCur(), from_alu = alu.output_.GetCur(), &memory, &alu,
+  auto write_func = [this, &rf, &rb, &decoder, &memory, &alu,
       stall = decoder.IsStallNeeded(rb.IsFull(), IsFull(), lsb.IsFull())]() {
-    if (flush) {
+    if (rb.flush_.GetCur().flush_) {
       Flush();
       return;
     }
-    InsertInst(stall, from_decoder, rf, rb, memory, alu);
-    UpdateDependencies(from_mem, from_alu);
+    InsertInst(stall, decoder.output_.GetCur(), rf, rb, memory, alu);
+    UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur());
     int rs_id = WriteToALU(rb, memory, alu);
     if (rs_id != -1) {
       rs_.New()[rs_id].busy_ = false;
@@ -82,6 +82,7 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   };
   wc_.Set(write_func, 1);
 }
+
 #endif
 
 void ReservationStation::Write() {

@@ -31,6 +31,7 @@ void InstructionUnit::Update() {
   wc_.Update();
 }
 
+#ifdef _DEBUG
 void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
                               const ReorderBuffer &rb, const ReservationStation &rs) {
   if (wc_.IsBusy()) {
@@ -50,6 +51,26 @@ void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb
   };
   wc_.Set(write_func, 1);
 }
+#else
+void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
+                              const ReorderBuffer &rb, const ReservationStation &rs) {
+  if (wc_.IsBusy()) {
+    return;
+  }
+  auto write_func = [this, &rb, &memory, stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull())]() {
+    if (rb.flush_.GetCur().flush_) {
+      Flush(rb.flush_.GetCur().pc_);
+      return;
+    }
+    bool dequeue = !stall && !iq_.GetCur().IsEmpty();
+    if (!stall) {
+      WriteToDecoder(dequeue);
+    }
+    WriteOthers(memory.to_iu_.GetCur());
+  };
+  wc_.Set(write_func, 1);
+}
+#endif
 
 void InstructionUnit::Write() {
   wc_.Write();
