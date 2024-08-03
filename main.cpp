@@ -8,8 +8,7 @@ int main() {
 
 #ifdef _DEBUG
   bubble::CPU cpu("pc", "pc_with_cycle");
-  cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/multiarray.data");
-  std::streambuf *cout_buf = std::cout.rdbuf();
+  cpu.LoadMemory("../testcases/pi.data");
   freopen("debug.txt", "w", stdout);
   std::cout << std::boolalpha;
 #else
@@ -20,7 +19,7 @@ int main() {
   while (!cpu.ShouldHalt()) {
     cpu.Update();
 #ifdef _DEBUG
-    cpu.Debug();
+    //cpu.Debug();
 #endif
     cpu.Execute();
     cpu.Write();
@@ -28,7 +27,7 @@ int main() {
   }
   output = cpu.Halt();
 #ifdef _DEBUG
-  std::cout.rdbuf(cout_buf);
+  freopen("/dev/tty", "w", stdout);
   std::cout << "output: " << output << "\n";
   std::cout << "clock cycle count: " << cpu.clock_.GetCycleCount() << "\n";
   std::cout << "accuracy of branch prediction: " << cpu.bp_.GetAccuracy() << "\n";

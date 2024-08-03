@@ -245,8 +245,8 @@ class RV32IInterpreter {
 };
 
 int main() {
-  freopen("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/multiarray.data", "r", stdin);
-  print_reg = true;
+  freopen("../testcases/pi.data", "r", stdin);
+  print_reg = false;
   if (print_reg) {
     freopen("pc_reg_answer.txt", "w", stdout);
   }
