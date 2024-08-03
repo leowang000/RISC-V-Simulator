@@ -70,9 +70,9 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, flush = rb.flush_.GetCur().flush_, &rf, &rb, &memory, &alu, &decoder,
+  auto write_func = [this, &rf, &rb, &memory, &alu, &decoder,
       is_mem_busy = memory.IsDataBusy(), stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), IsFull())]() {
-    if (flush) {
+    if (rb.flush_.GetCur().flush_) {
       Flush();
       return;
     }

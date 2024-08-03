@@ -62,9 +62,6 @@ class InstructionUnit {
   // the predictor predicts that it will jump.
   Register<bool> neglect_;
   const BranchPredictor *bp_;
-#ifndef _DEBUG
-  bool enqueue_, dequeue_;
-#endif
 };
 
 }

@@ -24,16 +24,7 @@ void InstructionUnit::Debug() const {
 
 void InstructionUnit::Update() {
   pc_.Update();
-#ifdef _DEBUG
   iq_.Update();
-#else
-  if (enqueue_) {
-    iq_.cur_.Enqueue(iq_.new_.Back());
-  }
-  if (dequeue_) {
-    iq_.cur_.Dequeue();
-  }
-#endif
   to_mem_.Update();
   to_decoder_.Update();
   neglect_.Update();
@@ -67,10 +58,6 @@ void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb
     return;
   }
   auto write_func = [this, &rb, &memory, stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull())]() {
-#ifndef _DEBUG
-    dequeue_ = false;
-    enqueue_ = false;
-#endif
     if (rb.flush_.GetCur().flush_) {
       Flush(rb.flush_.GetCur().pc_);
       return;
@@ -96,9 +83,6 @@ void InstructionUnit::ForceWrite() {
 void InstructionUnit::Flush(uint32_t pc) {
   pc_.Write(pc);
   iq_.New().Clear();
-#ifndef _DEBUG
-  iq_.cur_.Clear();
-#endif
   to_mem_.Write(IUToMemory(false, 0));
   to_decoder_.New().get_inst_ = false;
   neglect_.Write(false);
@@ -109,9 +93,6 @@ void InstructionUnit::WriteToDecoder(bool dequeue) {
     const InstQueueEntry &front = iq_.GetCur().Front();
     to_decoder_.Write(IUToDecoder(true, front.inst_, front.addr_, front.jump_));
     iq_.New().Dequeue();
-#ifndef _DEBUG
-    dequeue_ = true;
-#endif
   }
   else {
     to_decoder_.New().get_inst_ = false;
@@ -132,9 +113,6 @@ void InstructionUnit::WriteOthers(const MemoryToIU &from_mem) {
   if (from_mem.inst_ != 0) {
     bool jump = IsJAL(from_mem.inst_) || (IsBranchInst(from_mem.inst_) && bp_->Predict(from_mem.pc_));
     iq_.New().Enqueue(InstQueueEntry(from_mem.inst_, from_mem.pc_, jump));
-#ifndef _DEBUG
-    enqueue_ = true;
-#endif
     if (jump) {
       pc_.Write(GetJumpOrBranchDest(from_mem.inst_, from_mem.pc_));
       to_mem_.Write(IUToMemory());
