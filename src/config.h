@@ -1,3 +1,5 @@
+#undef _DEBUG
+
 #ifndef RISC_V_SIMULATOR_CONFIG_H
 #define RISC_V_SIMULATOR_CONFIG_H
 
@@ -9,11 +11,19 @@
 
 namespace bubble {
 
-constexpr int kInstQueueSize = 32;
 constexpr int kXLen = 32;
+
+#ifdef _DEBUG
+constexpr int kInstQueueSize = 3;
+constexpr int kRoBSize = 2;
+constexpr int kRSSize = 2;
+constexpr int kLSBSize = 2;
+#else
+constexpr int kInstQueueSize = 32;
 constexpr int kRoBSize = 32;
 constexpr int kRSSize = 32;
 constexpr int kLSBSize = 32;
+#endif
 
 enum InstType {
   kLUI, kAUIPC, kJAL, kJALR, kBEQ, kBNE, kBLT, kBGE, kBLTU, kBGEU, kLB, kLH, kLW, kLBU, kLHU, kSB, kSH, kSW, kADDI,

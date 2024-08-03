@@ -1,4 +1,3 @@
-#undef _DEBUG
 #include <iomanip>
 #include <iostream>
 
@@ -9,7 +8,7 @@ int main() {
 
 #ifdef _DEBUG
   bubble::CPU cpu("pc", "pc_with_cycle");
-  cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/naive.data");
+  cpu.LoadMemory("/mnt/c/Users/leowa/CLionProjects/RISC-V-Simulator/testcases/multiarray.data");
   freopen("debug.txt", "w", stdout);
   std::cout << std::boolalpha;
 #else

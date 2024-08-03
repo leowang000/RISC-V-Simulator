@@ -90,10 +90,12 @@ void ReorderBuffer::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
     WriteToMem(commit, is_front_store_inst, rb_.GetCur().Front());
     if (commit) {
       halt_ = rb_.GetCur().Front().inst_type_ == kHALT;
-//      static int counter = 0;
-//      pc_f_ << std::dec << counter << ": " << std::hex << rb_.New().Front().addr_ << std::endl;
-//      pc_with_cycle_cnt_f_ << std::dec << counter << ": " << wc_.clock_->GetCycleCount() << std::endl;
-//      counter++;
+#ifdef _DEBUG
+      static int counter = 0;
+      pc_f_ << std::dec << counter << ": " << std::hex << rb_.New().Front().addr_ << std::endl;
+      pc_with_cycle_cnt_f_ << std::dec << counter << ": " << wc_.clock_->GetCycleCount() << std::endl;
+      counter++;
+#endif
       rb_.New().Dequeue();
     }
     bool flush = WriteFlush(commit, rb_.GetCur().Front());
@@ -207,9 +209,11 @@ bool ReorderBuffer::WriteFlush(bool commit, const RoBEntry &rb_entry) {
     return false;
   }
   bool flush;
+  uint32_t dest;
   switch (rb_entry.inst_type_) {
     case kJALR:
       flush = true;
+      dest = rb_entry.dest_;
       break;
     case kBEQ:
     case kBNE:
@@ -218,11 +222,12 @@ bool ReorderBuffer::WriteFlush(bool commit, const RoBEntry &rb_entry) {
     case kBLTU:
     case kBGEU:
       flush = rb_entry.is_jump_predicted_ != rb_entry.val_;
+      dest = (rb_entry.val_ ? rb_entry.dest_ : rb_entry.addr_ + 4);
       break;
     default:
       flush = false;
   }
-  flush_.Write(FlushInfo(flush, rb_entry.dest_));
+  flush_.Write(FlushInfo(flush, dest));
   return flush;
 }
 
