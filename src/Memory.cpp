@@ -128,6 +128,13 @@ void Memory::StoreHalf(uint32_t addr, uint16_t num) {
 }
 
 void Memory::StoreByte(uint32_t addr, uint8_t num) {
+  if (memory_.count(addr / PageSize) == 0) {
+    std::array<uint8_t, PageSize> empty_page;
+    for (auto &i : empty_page) {
+      i = 0;
+    }
+    memory_.emplace(addr / PageSize, empty_page);
+  }
   memory_[addr / PageSize][addr % PageSize] = num;
 }
 
