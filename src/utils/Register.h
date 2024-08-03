@@ -14,8 +14,11 @@ class Register {
   T &New();
   const T &New() const;
   const T &GetCur() const;
-
+#ifdef _DEBUG
  private:
+#else
+ public:
+#endif
   T cur_, new_;
 };
 
