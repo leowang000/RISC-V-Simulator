@@ -14,7 +14,7 @@ class BranchPredictor {
   double GetAccuracy() const;
 
  private:
-  static constexpr int kMod = 127;
+  static constexpr int kMod = 128;
 
   static constexpr int GetHash(uint32_t pc) {
     return pc % kMod;

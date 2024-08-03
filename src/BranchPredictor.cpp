@@ -2,7 +2,7 @@
 
 namespace bubble {
 
-BranchPredictor::BranchPredictor() {
+BranchPredictor::BranchPredictor() : total_(), correct_() {
   for (auto &item : predictor_) {
     item = 0b01;
   }
