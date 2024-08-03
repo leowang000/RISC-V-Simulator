@@ -1,4 +1,4 @@
-#define _DEBUG
+#undef _DEBUG
 
 #ifndef RISC_V_SIMULATOR_CONFIG_H
 #define RISC_V_SIMULATOR_CONFIG_H
