@@ -273,7 +273,7 @@ void Decoder::WriteOutput(const IUToDecoder &from_iu) {
   if (!get_inst_type_success) {
     return;
   }
-  if (out.rd_ > 0b11111 || out.rs1_ > 0b11111 || out.rs2_ > 0b11111) {
+  if (out.rd_ >= kXLen || out.rs1_ >= kXLen || out.rs2_ >= kXLen) {
     return;
   }
   out.get_inst_ = true;

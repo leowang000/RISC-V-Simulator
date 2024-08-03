@@ -62,7 +62,7 @@ void InstructionUnit::ForceWrite() {
 void InstructionUnit::Flush(uint32_t pc) {
   pc_.Write(pc);
   iq_.New().Clear();
-  to_mem_.Write(IUToMemory(false, pc));
+  to_mem_.Write(IUToMemory(false, 0));
   to_decoder_.New().get_inst_ = false;
   neglect_.Write(false);
 }
