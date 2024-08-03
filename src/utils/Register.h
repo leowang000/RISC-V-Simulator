@@ -25,7 +25,6 @@ Register<T>::Register(const T &data) : cur_(data), new_(data) {}
 template<class T>
 void Register<T>::Update() {
   cur_ = new_;
-  new_ = cur_;
 }
 
 template<class T>
