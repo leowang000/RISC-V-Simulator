@@ -245,8 +245,8 @@ class RV32IInterpreter {
 };
 
 int main() {
-  freopen("../testcases/pi.data", "r", stdin);
-  print_reg = false;
+  freopen("../testcases/lvalue2.data", "r", stdin);
+  print_reg = true;
   if (print_reg) {
     freopen("pc_reg_answer.txt", "w", stdout);
   }

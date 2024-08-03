@@ -56,7 +56,7 @@ std::array<int, kXLen> RegisterFile::GetRegisterStatus(const ReorderBuffer &rb) 
 
 int RegisterFile::GetRegisterStatus(uint8_t i, const bubble::ReorderBuffer &rb) const {
   if (i == 0) {
-    return 0;
+    return -1;
   }
   int prev_begin_id = rb.rb_.GetCur().BeginId() == 0 ? kRoBSize : rb.rb_.GetCur().BeginId() - 1;
   return rb.to_rf_.GetCur().write_ && i == rb.to_rf_.GetCur().rd_ &&
