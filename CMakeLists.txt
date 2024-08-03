@@ -11,6 +11,7 @@ add_executable(code
         src/BranchPredictor.cpp
         src/CPU.cpp
         src/Clock.cpp
+        src/config.cpp
         src/Decoder.cpp
         src/InstructionUnit.cpp
         src/LoadStoreBuffer.cpp
@@ -18,8 +19,7 @@ add_executable(code
         src/RegisterFile.cpp
         src/ReorderBuffer.cpp
         src/ReservationStation.cpp
-        src/config.cpp
-        src/utils/WriteController.cpp
+        src/WriteController.cpp
 )
 
 add_executable(test

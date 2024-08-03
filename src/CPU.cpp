@@ -1,5 +1,6 @@
 #include <cassert>
 #include <fstream>
+#include <algorithm>
 
 #include "utils/NumberOperation.h"
 
@@ -41,46 +42,132 @@ void CPU::LoadMemory() {
 }
 
 void CPU::Update() {
-  alu_.Update();
-  decoder_.Update();
-  iu_.Update();
-  lsb_.Update();
-  memory_.Update();
-  rf_.Update();
-  rb_.Update();
-  rs_.Update();
+  static int order[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+  std::random_shuffle(order, order + 8);
+  for (auto i : order) {
+    switch (i) {
+      case 0:
+        alu_.Update();
+        break;
+      case 1:
+        decoder_.Update();
+        break;
+      case 2:
+        iu_.Update();
+        break;
+      case 3:
+        lsb_.Update();
+        break;
+      case 4:
+        memory_.Update();
+        break;
+      case 5:
+        rf_.Update();
+        break;
+      case 6:
+        rb_.Update();
+        break;
+      case 7:
+        rs_.Update();
+        break;
+    }
+  }
 }
 
 void CPU::Execute() {
-  alu_.Execute(rb_, rs_);
-  decoder_.Execute(iu_, lsb_, rb_, rs_);
-  iu_.Execute(decoder_, lsb_, memory_, rb_, rs_);
-  lsb_.Execute(alu_, decoder_, memory_, rb_, rf_, rs_);
-  memory_.Execute(iu_, lsb_, rb_);
-  rf_.Execute(decoder_, lsb_, rb_, rs_);
-  rb_.Execute(alu_, decoder_, lsb_, memory_, rs_);
-  rs_.Execute(alu_, decoder_, lsb_, memory_, rb_, rf_);
+  static int order[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+  std::random_shuffle(order, order + 8);
+  for (auto i : order) {
+    switch (i) {
+      case 0:
+        alu_.Execute(rb_, rs_);
+        break;
+      case 1:
+        decoder_.Execute(iu_, lsb_, rb_, rs_);
+        break;
+      case 2:
+        iu_.Execute(decoder_, lsb_, memory_, rb_, rs_);
+        break;
+      case 3:
+        lsb_.Execute(alu_, decoder_, memory_, rb_, rf_, rs_);
+        break;
+      case 4:
+        memory_.Execute(iu_, lsb_, rb_);
+        break;
+      case 5:
+        rf_.Execute(decoder_, lsb_, rb_, rs_);
+        break;
+      case 6:
+        rb_.Execute(alu_, decoder_, lsb_, memory_, rs_);
+        break;
+      case 7:
+        rs_.Execute(alu_, decoder_, lsb_, memory_, rb_, rf_);
+        break;
+    }
+  }
 }
 
 void CPU::Write() {
+  static int order[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+  std::random_shuffle(order, order + 8);
 #ifdef _DEBUG
-  alu_.Write();
-  decoder_.Write();
-  iu_.Write();
-  lsb_.Write();
-  memory_.Write();
-  rf_.Write();
-  rb_.Write();
-  rs_.Write();
+  for (auto i : order) {
+    switch (i) {
+      case 0:
+        alu_.Write();
+        break;
+      case 1:
+        decoder_.Write();
+        break;
+      case 2:
+        iu_.Write();
+        break;
+      case 3:
+        lsb_.Write();
+        break;
+      case 4:
+        memory_.Write();
+        break;
+      case 5:
+        rf_.Write();
+        break;
+      case 6:
+        rb_.Write();
+        break;
+      case 7:
+        rs_.Write();
+        break;
+    }
+  }
 #else
-  alu_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  decoder_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  iu_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  lsb_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  memory_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  rf_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  rb_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  rs_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  for (auto i : order) {
+    switch (i) {
+      case 0:
+        alu_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 1:
+        decoder_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 2:
+        iu_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 3:
+        lsb_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 4:
+        memory_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 5:
+        rf_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 6:
+        rb_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+      case 7:
+        rs_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+        break;
+    }
+  }
 #endif
 }
 
@@ -99,28 +186,6 @@ uint32_t CPU::Halt() {
   memory_.Update();
   rf_.Update();
   return GetSub(rf_.value_[10].GetCur(), 7, 0);
-}
-
-void CPU::ForceWrite() {
-#ifdef _DEBUG
-  alu_.ForceWrite();
-  decoder_.ForceWrite();
-  iu_.ForceWrite();
-  lsb_.ForceWrite();
-  memory_.ForceWrite();
-  rf_.ForceWrite();
-  rb_.ForceWrite();
-  rs_.ForceWrite();
-#else
-  alu_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  decoder_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  iu_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  lsb_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  memory_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  rf_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  rb_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-  rs_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
-#endif
 }
 
 }

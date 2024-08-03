@@ -1,5 +1,3 @@
-#undef _DEBUG
-
 #ifndef RISC_V_SIMULATOR_WRITECONTROLLER_H
 #define RISC_V_SIMULATOR_WRITECONTROLLER_H
 
@@ -7,9 +5,11 @@
 #include <functional>
 #include <utility>
 
-#include "Register.h"
+#include "utils/Register.h"
 
-#include "../Clock.h"
+#include "config.h"
+
+#include "Clock.h"
 
 namespace bubble {
 

@@ -6,11 +6,11 @@
 #include "utils/CircularQueue.h"
 #include "utils/NumberOperation.h"
 #include "utils/Register.h"
-#include "utils/WriteController.h"
 
 #include "BranchPredictor.h"
 #include "Clock.h"
 #include "config.h"
+#include "WriteController.h"
 
 namespace bubble {
 

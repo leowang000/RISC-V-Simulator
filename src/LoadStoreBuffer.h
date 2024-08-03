@@ -5,10 +5,10 @@
 
 #include "utils/CircularQueue.h"
 #include "utils/Register.h"
-#include "utils/WriteController.h"
 
 #include "Clock.h"
 #include "config.h"
+#include "WriteController.h"
 
 namespace bubble {
 

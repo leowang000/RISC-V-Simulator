@@ -41,9 +41,6 @@ class CPU {
   RegisterFile rf_;
   ReorderBuffer rb_;
   ReservationStation rs_;
-
- private:
-  void ForceWrite();
 };
 
 }

@@ -19,10 +19,10 @@ constexpr int kRoBSize = 2;
 constexpr int kRSSize = 2;
 constexpr int kLSBSize = 2;
 #else
-constexpr int kInstQueueSize = 3;
-constexpr int kRoBSize = 2;
-constexpr int kRSSize = 2;
-constexpr int kLSBSize = 2;
+constexpr int kInstQueueSize = 16;
+constexpr int kRoBSize = 32;
+constexpr int kRSSize = 16;
+constexpr int kLSBSize = 16;
 #endif
 
 enum InstType {

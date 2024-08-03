@@ -1,10 +1,9 @@
 #ifndef RISC_V_SIMULATOR_ALU_H
 #define RISC_V_SIMULATOR_ALU_H
 
-#include "utils/WriteController.h"
-
 #include "Clock.h"
 #include "config.h"
+#include "WriteController.h"
 
 namespace bubble {
 
