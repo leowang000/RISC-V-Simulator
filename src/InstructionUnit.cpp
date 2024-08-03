@@ -52,27 +52,31 @@ void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb
   wc_.Set(write_func, 1);
 }
 #else
+
 void InstructionUnit::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
                               const ReorderBuffer &rb, const ReservationStation &rs) {
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rb, &decoder, &rs, &lsb, &memory]() {
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                       RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
     bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
-      Flush(rb.flush_.GetCur().pc_);
+      iu.Flush(rb.flush_.GetCur().pc_);
       return;
     }
-    bool dequeue = !stall && !iq_.GetCur().IsEmpty();
+    bool dequeue = !stall && !iu.iq_.GetCur().IsEmpty();
     if (!stall) {
-      WriteToDecoder(dequeue);
+      iu.WriteToDecoder(dequeue);
     }
-    WriteOthers(memory.to_iu_.GetCur());
+    iu.WriteOthers(memory.to_iu_.GetCur());
   };
   wc_.Set(write_func, 1);
 }
+
 #endif
 
+#ifdef _DEBUG
 void InstructionUnit::Write() {
   wc_.Write();
 }
@@ -80,6 +84,19 @@ void InstructionUnit::Write() {
 void InstructionUnit::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+
+void InstructionUnit::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                            RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void InstructionUnit::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                                 RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+#endif
 
 void InstructionUnit::Flush(uint32_t pc) {
   pc_.Write(pc);

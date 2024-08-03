@@ -92,13 +92,14 @@ void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, cons
 #else
 void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, const ReorderBuffer &rb) {
   if (!wc_inst_.IsBusy()) {
-    auto write_func = [this, &rb, &iu]() {
+    auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                         RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
       if (rb.flush_.GetCur().flush_) {
-        to_iu_.New().inst_ = 0;
+        memory.to_iu_.New().inst_ = 0;
         return;
       }
-      to_iu_.New().inst_ = (iu.to_mem_.GetCur().load_ ? LoadWord(iu.to_mem_.GetCur().pc_) : 0);
-      to_iu_.New().pc_ = (iu.to_mem_.GetCur().load_ ? iu.to_mem_.GetCur().pc_ : 0);
+      memory.to_iu_.New().inst_ = (iu.to_mem_.GetCur().load_ ? memory.LoadWord(iu.to_mem_.GetCur().pc_) : 0);
+      memory.to_iu_.New().pc_ = (iu.to_mem_.GetCur().load_ ? iu.to_mem_.GetCur().pc_ : 0);
     };
     wc_inst_.Set(write_func, 1);
   }
@@ -113,9 +114,10 @@ void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, cons
     if (lsb.to_mem_.GetCur().load_ || rb.to_mem_.GetCur().store_) {
       from_lsb_ = lsb.to_mem_.GetCur();
       from_rb_ = rb.to_mem_.GetCur();
-      auto write_func = [this]() {
-        WriteOutput(from_lsb_, from_rb_);
-        is_load_ = false;
+      auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                           RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+        memory.WriteOutput(memory.from_lsb_, memory.from_rb_);
+        memory.is_load_ = false;
       };
       wc_data_.Set(write_func, 3);
       is_load_ = lsb.to_mem_.GetCur().load_;
@@ -127,14 +129,29 @@ void Memory::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, cons
 }
 #endif
 
+#ifdef _DEBUG
 void Memory::Write() {
   wc_data_.Write();
   wc_inst_.Write();
 }
 
 void Memory::ForceWrite() {
+  wc_inst_.ForceWrite();
   wc_data_.ForceWrite();
 }
+#else
+void Memory::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_inst_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+  wc_data_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void Memory::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_inst_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+  wc_data_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+#endif
 
 uint32_t Memory::LoadWord(uint32_t addr) const {
   return (static_cast<uint32_t>(LoadByte(addr + 3)) << 24) | (static_cast<uint32_t>(LoadByte(addr + 2)) << 16) |

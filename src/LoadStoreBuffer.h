@@ -12,12 +12,23 @@
 
 namespace bubble {
 
+#ifdef _DEBUG
 class ALU;
 class Decoder;
 class Memory;
 class RegisterFile;
 class ReorderBuffer;
 class ReservationStation;
+#else
+class ALU;
+class Decoder;
+class InstructionUnit;
+class LoadStoreBuffer;
+class Memory;
+class RegisterFile;
+class ReorderBuffer;
+class ReservationStation;
+#endif
 
 class LoadStoreBuffer {
  public:
@@ -28,8 +39,15 @@ class LoadStoreBuffer {
   void Update();
   void Execute(const ALU &alu, const Decoder &decoder, const Memory &memory, const ReorderBuffer &rb,
                const RegisterFile &rf, const ReservationStation &rs);
+#ifdef _DEBUG
   void Write();
   void ForceWrite();
+#else
+  void Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+             RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+  void ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                  RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+#endif
 
   Register<CircularQueue<LSBEntry, kLSBSize>> lsb_;
   Register<LSBToMemory> to_mem_;

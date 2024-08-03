@@ -63,6 +63,7 @@ void CPU::Execute() {
 }
 
 void CPU::Write() {
+#ifdef _DEBUG
   alu_.Write();
   decoder_.Write();
   iu_.Write();
@@ -71,6 +72,16 @@ void CPU::Write() {
   rf_.Write();
   rb_.Write();
   rs_.Write();
+#else
+  alu_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  decoder_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  iu_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  lsb_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  memory_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rf_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rb_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rs_.Write(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+#endif
 }
 
 bool CPU::ShouldHalt() const {
@@ -78,14 +89,20 @@ bool CPU::ShouldHalt() const {
 }
 
 uint32_t CPU::Halt() {
+#ifdef _DEBUG
   memory_.ForceWrite();
   rf_.ForceWrite();
+#else
+  memory_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rf_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+#endif
   memory_.Update();
   rf_.Update();
   return GetSub(rf_.value_[10].GetCur(), 7, 0);
 }
 
 void CPU::ForceWrite() {
+#ifdef _DEBUG
   alu_.ForceWrite();
   decoder_.ForceWrite();
   iu_.ForceWrite();
@@ -94,6 +111,16 @@ void CPU::ForceWrite() {
   rf_.ForceWrite();
   rb_.ForceWrite();
   rs_.ForceWrite();
+#else
+  alu_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  decoder_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  iu_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  lsb_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  memory_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rf_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rb_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+  rs_.ForceWrite(alu_, decoder_, iu_, lsb_, memory_, rf_, rb_, rs_);
+#endif
 }
 
 }

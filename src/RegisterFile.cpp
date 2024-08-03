@@ -99,21 +99,23 @@ void RegisterFile::Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, c
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rs, &lsb, &rb, &decoder]() {
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                                                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
     bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
-      Flush();
+      rf.Flush();
       return;
     }
     int rb_begin_id = rb.rb_.GetCur().BeginId();
-    RemoveDependencyAndWrite(rb.to_rf_.GetCur(), rb_begin_id == 0 ? kRoBSize : rb_begin_id - 1);
-    AddDependency(stall, decoder.output_.GetCur(), rb.rb_.GetCur().EndId());
+    rf.RemoveDependencyAndWrite(rb.to_rf_.GetCur(), rb_begin_id == 0 ? kRoBSize : rb_begin_id - 1);
+    rf.AddDependency(stall, decoder.output_.GetCur(), rb.rb_.GetCur().EndId());
   };
   wc_.Set(write_func, 1);
 }
 
 #endif
 
+#ifdef _DEBUG
 void RegisterFile::Write() {
   wc_.Write();
 }
@@ -121,6 +123,17 @@ void RegisterFile::Write() {
 void RegisterFile::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+void RegisterFile::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void RegisterFile::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+#endif
 
 void RegisterFile::Flush() {
   for (int i = 0; i < kXLen; i++) {

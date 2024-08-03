@@ -28,8 +28,15 @@ class InstructionUnit {
   void Update();
   void Execute(const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory, const ReorderBuffer &rb,
                const ReservationStation &rs);
+#ifdef _DEBUG
   void Write();
   void ForceWrite();
+#else
+  void Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+             RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+  void ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                  RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+#endif
 
   Register<uint32_t> pc_;
   Register<CircularQueue<InstQueueEntry, kInstQueueSize>> iq_;

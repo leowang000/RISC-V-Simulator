@@ -1,3 +1,5 @@
+#undef _DEBUG
+
 #ifndef RISC_V_SIMULATOR_WRITECONTROLLER_H
 #define RISC_V_SIMULATOR_WRITECONTROLLER_H
 
@@ -10,6 +12,17 @@
 #include "../Clock.h"
 
 namespace bubble {
+
+#ifndef _DEBUG
+class ALU;
+class Decoder;
+class InstructionUnit;
+class LoadStoreBuffer;
+class Memory;
+class RegisterFile;
+class ReorderBuffer;
+class ReservationStation;
+#endif
 
 /*
  * Use WriteController to control when to write and whether the output is ready.
@@ -25,17 +38,31 @@ class WriteController {
   void Update();
   bool IsReady() const;
   bool IsBusy() const;
+#ifdef _DEBUG
   void Set(const std::function<void()> &write_func, int cycle_cnt);
-  void Reset();
   void Write() const;
   void ForceWrite() const;
+#else
+  void Set(void (*write_func)(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                              RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs), int cycle_cnt);
+  void Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+             RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) const;
+  void ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                  RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) const;
+#endif
+  void Reset();
 
  private:
  public:
   const Clock *clock_;
  private:
   Register<uint32_t> done_;
+#ifdef _DEBUG
   std::function<void()> write_func_;
+#else
+  void (*write_func_)(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                      RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+#endif
   bool busy_;
 };
 

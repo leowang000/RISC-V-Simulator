@@ -67,17 +67,18 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rf, &rb, &decoder, &memory, &alu, &lsb]() {
-    bool stall = decoder.IsStallNeeded(rb.IsFull(), IsFull(), lsb.IsFull());
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                       RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
-      Flush();
+      rs.Flush();
       return;
     }
-    InsertInst(stall, decoder.output_.GetCur(), rf, rb, memory, alu);
-    UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur());
-    int rs_id = WriteToALU(rb, memory, alu);
+    rs.InsertInst(stall, decoder.output_.GetCur(), rf, rb, memory, alu);
+    rs.UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur());
+    int rs_id = rs.WriteToALU(rb, memory, alu);
     if (rs_id != -1) {
-      rs_.New()[rs_id].busy_ = false;
+      rs.rs_.New()[rs_id].busy_ = false;
     }
   };
   wc_.Set(write_func, 1);
@@ -85,6 +86,7 @@ ReservationStation::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
 
 #endif
 
+#ifdef _DEBUG
 void ReservationStation::Write() {
   wc_.Write();
 }
@@ -92,6 +94,20 @@ void ReservationStation::Write() {
 void ReservationStation::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+
+void ReservationStation::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                               RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void
+ReservationStation::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                               RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+#endif
 
 void ReservationStation::Flush() {
   for (int i = 0; i < kRSSize; i++) {

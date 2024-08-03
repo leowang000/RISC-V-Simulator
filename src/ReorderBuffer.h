@@ -15,11 +15,22 @@
 
 namespace bubble {
 
+#ifdef _DEBUG
 class ALU;
 class Decoder;
 class LoadStoreBuffer;
 class Memory;
 class ReservationStation;
+#else
+class ALU;
+class Decoder;
+class InstructionUnit;
+class LoadStoreBuffer;
+class Memory;
+class RegisterFile;
+class ReorderBuffer;
+class ReservationStation;
+#endif
 
 class ReorderBuffer {
  public:
@@ -34,8 +45,15 @@ class ReorderBuffer {
   void Update();
   void Execute(const ALU &alu, const Decoder &decoder, const LoadStoreBuffer &lsb, const Memory &memory,
                const ReservationStation &rs);
+#ifdef _DEBUG
   void Write();
   void ForceWrite();
+#else
+  void Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+             RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+  void ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                  RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+#endif
 
   Register<CircularQueue<RoBEntry, kRoBSize>> rb_;
   Register<RobToRF> to_rf_;

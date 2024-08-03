@@ -69,20 +69,22 @@ void Decoder::Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, con
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &iu, &rb, &lsb, &rs] {
-    bool stall = IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                       RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
-      Flush();
+      decoder.Flush();
       return;
     }
     if (!stall) {
-      WriteOutput(iu.to_decoder_.GetCur());
+      decoder.WriteOutput(iu.to_decoder_.GetCur());
     }
   };
   wc_.Set(write_func, 1);
 }
 #endif
 
+#ifdef _DEBUG
 void Decoder::Write() {
   wc_.Write();
 }
@@ -90,6 +92,17 @@ void Decoder::Write() {
 void Decoder::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+void Decoder::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void Decoder::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+#endif
 
 bool Decoder::GetOperands(DecoderOutput &out, uint32_t inst) {
   switch (inst & 0b1111111) {

@@ -11,10 +11,21 @@
 
 namespace bubble {
 
+#ifdef _DEBUG
 class InstructionUnit;
 class LoadStoreBuffer;
 class ReorderBuffer;
 class ReservationStation;
+#else
+class ALU;
+class Decoder;
+class InstructionUnit;
+class LoadStoreBuffer;
+class Memory;
+class RegisterFile;
+class ReorderBuffer;
+class ReservationStation;
+#endif
 
 class Decoder {
  public:
@@ -25,8 +36,15 @@ class Decoder {
   void Update();
   void
   Execute(const InstructionUnit &iu, const LoadStoreBuffer &lsb, const ReorderBuffer &rb, const ReservationStation &rs);
+#ifdef _DEBUG
   void Write();
   void ForceWrite();
+#else
+  void Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+             RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+  void ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                  RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs);
+#endif
 
   Register<DecoderOutput> output_;
 

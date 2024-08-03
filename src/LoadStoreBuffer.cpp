@@ -70,15 +70,16 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rf, &rb, &rs, &memory, &alu, &decoder]() {
-    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), IsFull());
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                       RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
     if (rb.flush_.GetCur().flush_) {
-      Flush();
+      lsb.Flush();
       return;
     }
-    const LSBEntry &lsb_front = lsb_.GetCur().Front();
+    const LSBEntry &lsb_front = lsb.lsb_.GetCur().Front();
     const InstType &from_decoder_inst_type = decoder.output_.GetCur().inst_type_;
-    bool is_front_load = !lsb_.GetCur().IsEmpty() &&
+    bool is_front_load = !lsb.lsb_.GetCur().IsEmpty() &&
                          (lsb_front.inst_type_ == kLB || lsb_front.inst_type_ == kLH || lsb_front.inst_type_ == kLW ||
                           lsb_front.inst_type_ == kLBU || lsb_front.inst_type_ == kLHU);
     bool is_new_inst_load = (from_decoder_inst_type == kLB || from_decoder_inst_type == kLH ||
@@ -86,11 +87,11 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
                              from_decoder_inst_type == kLHU);
     bool is_new_inst_store = (from_decoder_inst_type == kSB || from_decoder_inst_type == kSH ||
                               from_decoder_inst_type == kSW);
-    EnqueueInst(stall, is_new_inst_store, is_new_inst_load, decoder.output_.GetCur(), rf, rb, memory, alu);
-    UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur());
-    bool dequeue_load = WriteToMemory(is_front_load, memory.IsDataBusy());
+    lsb.EnqueueInst(stall, is_new_inst_store, is_new_inst_load, decoder.output_.GetCur(), rf, rb, memory, alu);
+    lsb.UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur());
+    bool dequeue_load = lsb.WriteToMemory(is_front_load, memory.IsDataBusy());
     if (dequeue_load || rb.to_mem_.GetCur().store_) {
-      lsb_.New().Dequeue();
+      lsb.lsb_.New().Dequeue();
     }
   };
   wc_.Set(write_func, 1);
@@ -98,6 +99,7 @@ void LoadStoreBuffer::Execute(const ALU &alu, const Decoder &decoder, const Memo
 
 #endif
 
+#ifdef _DEBUG
 void LoadStoreBuffer::Write() {
   wc_.Write();
 }
@@ -105,6 +107,17 @@ void LoadStoreBuffer::Write() {
 void LoadStoreBuffer::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+void LoadStoreBuffer::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void LoadStoreBuffer::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+#endif
 
 void LoadStoreBuffer::Flush() {
   lsb_.New().Clear();

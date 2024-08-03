@@ -123,39 +123,41 @@ void ReorderBuffer::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &memory, &alu, &decoder, &lsb, &rs]() {
-    bool stall = decoder.IsStallNeeded(IsFull(), rs.IsFull(), lsb.IsFull());
-    if (flush_.GetCur().flush_) {
-      Flush();
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                       RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+    bool stall = decoder.IsStallNeeded(rb.IsFull(), rs.IsFull(), lsb.IsFull());
+    if (rb.flush_.GetCur().flush_) {
+      rb.Flush();
       return;
     }
-    EnqueueInst(stall, decoder.output_.GetCur());
-    UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur(), lsb.lsb_.GetCur().IsEmpty(),
+    rb.EnqueueInst(stall, decoder.output_.GetCur());
+    rb.UpdateDependencies(memory.output_.GetCur(), alu.output_.GetCur(), lsb.lsb_.GetCur().IsEmpty(),
                        lsb.lsb_.GetCur().Front());
-    bool is_empty = rb_.GetCur().IsEmpty();
-    const RoBEntry &rob_front = rb_.GetCur().Front();
+    bool is_empty = rb.rb_.GetCur().IsEmpty();
+    const RoBEntry &rob_front = rb.rb_.GetCur().Front();
     bool is_front_store_inst =
         !is_empty && (rob_front.inst_type_ == kSB || rob_front.inst_type_ == kSH || rob_front.inst_type_ == kSW);
     bool is_front_branch_inst = !is_empty && (rob_front.inst_type_ == kBEQ || rob_front.inst_type_ == kBNE ||
                                               rob_front.inst_type_ == kBLT || rob_front.inst_type_ == kBLTU ||
                                               rob_front.inst_type_ == kBGE || rob_front.inst_type_ == kBGEU);
     bool commit =
-        !is_empty && rob_front.done_ && !(is_front_store_inst && (memory.IsDataBusy() || to_mem_.GetCur().store_));
-    WriteToRF(commit, is_front_store_inst || is_front_branch_inst, rob_front);
-    WriteToMem(commit, is_front_store_inst, rob_front);
+        !is_empty && rob_front.done_ && !(is_front_store_inst && (memory.IsDataBusy() || rb.to_mem_.GetCur().store_));
+    rb.WriteToRF(commit, is_front_store_inst || is_front_branch_inst, rob_front);
+    rb.WriteToMem(commit, is_front_store_inst, rob_front);
     if (commit) {
-      halt_ = rb_.GetCur().Front().inst_type_ == kHALT;
-      rb_.New().Dequeue();
+      rb.halt_ = rb.rb_.GetCur().Front().inst_type_ == kHALT;
+      rb.rb_.New().Dequeue();
     }
-    bool flush = WriteFlush(commit, rb_.GetCur().Front());
+    bool flush = rb.WriteFlush(commit, rb.rb_.GetCur().Front());
     if (is_front_branch_inst && commit) {
-      bp_->Update(rb_.GetCur().Front().addr_, rb_.GetCur().Front().val_, !flush);
+      rb.bp_->Update(rb.rb_.GetCur().Front().addr_, rb.rb_.GetCur().Front().val_, !flush);
     }
   };
   wc_.Set(write_func, 1);
 }
 #endif
 
+#ifdef _DEBUG
 void ReorderBuffer::Write() {
   wc_.Write();
 }
@@ -163,6 +165,17 @@ void ReorderBuffer::Write() {
 void ReorderBuffer::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+void ReorderBuffer::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void ReorderBuffer::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+#endif
 
 void ReorderBuffer::Flush() {
   rb_.New().Clear();

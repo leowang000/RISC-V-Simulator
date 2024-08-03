@@ -38,18 +38,20 @@ void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
   if (wc_.IsBusy()) {
     return;
   }
-  auto write_func = [this, &rb, &rs]() {
+  auto write_func = [](ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                       RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
     if (rb.flush_.GetCur().flush_) {
-      Flush();
+      alu.Flush();
       return;
     }
-    WriteOutput(rs.to_alu_.GetCur());
+    alu.WriteOutput(rs.to_alu_.GetCur());
   };
   wc_.Set(write_func, 1);
 }
 
 #endif
 
+#ifdef _DEBUG
 void ALU::Write() {
   wc_.Write();
 }
@@ -57,6 +59,17 @@ void ALU::Write() {
 void ALU::ForceWrite() {
   wc_.ForceWrite();
 }
+#else
+void ALU::Write(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.Write(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+
+void ALU::ForceWrite(ALU &alu, Decoder &decoder, InstructionUnit &iu, LoadStoreBuffer &lsb, Memory &memory,
+                     RegisterFile &rf, ReorderBuffer &rb, ReservationStation &rs) {
+  wc_.ForceWrite(alu, decoder, iu, lsb, memory, rf, rb, rs);
+}
+#endif
 
 void ALU::Flush() {
   output_.New().done_ = false;
