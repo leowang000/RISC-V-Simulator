@@ -77,17 +77,15 @@ void ReorderBuffer::Execute(const ALU &alu, const Decoder &decoder, const LoadSt
     EnqueueInst(stall, from_decoder);
     UpdateDependencies(from_mem, from_alu, is_lsb_empty, lsb_front);
     bool is_empty = rb_.GetCur().IsEmpty();
-    bool is_front_store_inst = !is_empty &&
-                               (rb_.GetCur().Front().inst_type_ == kSB || rb_.GetCur().Front().inst_type_ == kSH ||
-                                rb_.GetCur().Front().inst_type_ == kSW);
-    bool is_front_branch_inst = !is_empty &&
-                                (rb_.GetCur().Front().inst_type_ == kBEQ || rb_.GetCur().Front().inst_type_ == kBNE ||
-                                 rb_.GetCur().Front().inst_type_ == kBLT || rb_.GetCur().Front().inst_type_ == kBLTU ||
-                                 rb_.GetCur().Front().inst_type_ == kBGE || rb_.GetCur().Front().inst_type_ == kBGEU);
-    bool commit =
-        !is_empty && rb_.GetCur().Front().done_ && !(is_front_store_inst && (is_mem_busy || to_mem_.GetCur().store_));
-    WriteToRF(commit, is_front_store_inst || is_front_branch_inst, rb_.GetCur().Front());
-    WriteToMem(commit, is_front_store_inst, rb_.GetCur().Front());
+    const RoBEntry &rob_front = rb_.GetCur().Front();
+    bool is_front_store_inst =
+        !is_empty && (rob_front.inst_type_ == kSB || rob_front.inst_type_ == kSH || rob_front.inst_type_ == kSW);
+    bool is_front_branch_inst = !is_empty && (rob_front.inst_type_ == kBEQ || rob_front.inst_type_ == kBNE ||
+                                              rob_front.inst_type_ == kBLT || rob_front.inst_type_ == kBLTU ||
+                                              rob_front.inst_type_ == kBGE || rob_front.inst_type_ == kBGEU);
+    bool commit = !is_empty && rob_front.done_ && !(is_front_store_inst && (is_mem_busy || to_mem_.GetCur().store_));
+    WriteToRF(commit, is_front_store_inst || is_front_branch_inst, rob_front);
+    WriteToMem(commit, is_front_store_inst, rob_front);
     if (commit) {
       halt_ = rb_.GetCur().Front().inst_type_ == kHALT;
 #ifdef _DEBUG
