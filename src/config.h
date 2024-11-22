@@ -14,10 +14,10 @@ namespace bubble {
 constexpr int kXLen = 32;
 
 #ifdef _DEBUG
-constexpr int kInstQueueSize = 3;
-constexpr int kRoBSize = 2;
-constexpr int kRSSize = 2;
-constexpr int kLSBSize = 2;
+constexpr int kInstQueueSize = 16;
+constexpr int kRoBSize = 32;
+constexpr int kRSSize = 16;
+constexpr int kLSBSize = 16;
 #else
 constexpr int kInstQueueSize = 16;
 constexpr int kRoBSize = 32;

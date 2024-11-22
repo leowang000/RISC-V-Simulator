@@ -33,7 +33,6 @@ void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
   wc_.Set(write_func, 1);
 }
 #else
-
 void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
   if (wc_.IsBusy()) {
     return;
@@ -48,7 +47,6 @@ void ALU::Execute(const ReorderBuffer &rb, const ReservationStation &rs) {
   };
   wc_.Set(write_func, 1);
 }
-
 #endif
 
 #ifdef _DEBUG

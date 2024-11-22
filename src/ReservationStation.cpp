@@ -116,6 +116,8 @@ void ReservationStation::Flush() {
   to_alu_.New().execute_ = false;
 }
 
+#ifdef _DEBUG
+
 void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decoder,
                                     const std::array<uint32_t, kXLen> &reg_value,
                                     const std::array<int, kXLen> &reg_status,
@@ -206,6 +208,8 @@ void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decode
   }
   rs_.New()[rs_id] = rs_entry;
 }
+
+#else
 
 void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decoder, const RegisterFile &rf,
                                     const ReorderBuffer &rb, const Memory &memory, const ALU &alu) {
@@ -298,6 +302,8 @@ void ReservationStation::InsertInst(bool stall, const DecoderOutput &from_decode
   rs_.New()[rs_id] = rs_entry;
 }
 
+#endif
+
 void ReservationStation::UpdateDependencies(const MemoryOutput &from_mem, const ALUOutput &from_alu) {
   if (from_mem.done_) {
     for (int i = 0; i < kRSSize; i++) {
@@ -328,6 +334,8 @@ void ReservationStation::UpdateDependencies(const MemoryOutput &from_mem, const 
     }
   }
 }
+
+#ifdef _DEBUG
 
 int ReservationStation::WriteToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_queue) {
   to_alu_.New().execute_ = false;
@@ -408,6 +416,8 @@ int ReservationStation::WriteToALU(const CircularQueue<RoBEntry, kRoBSize> &rb_q
   return rs_id;
 }
 
+#else
+
 int ReservationStation::WriteToALU(const ReorderBuffer &rb, const Memory &memory, const ALU &alu) {
   to_alu_.New().execute_ = false;
   int rs_id = -1;
@@ -486,5 +496,7 @@ int ReservationStation::WriteToALU(const ReorderBuffer &rb, const Memory &memory
   to_alu_.Write(to_alu);
   return rs_id;
 }
+
+#endif
 
 }
